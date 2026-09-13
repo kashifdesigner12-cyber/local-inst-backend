@@ -1,4 +1,4 @@
-const WhatsAppService = require('../services/WhatsAppService');
+const WhatsAppService = require('../services/whatsAppService');
 
 const sendAbsentTest = async (req, res) => {
   try {

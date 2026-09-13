@@ -1,4 +1,4 @@
-const WhatsAppService = require('../services/whatsappService');
+const WhatsAppService = require('../services/WhatsAppService');
 
 const sendAbsentTest = async (req, res) => {
   try {
@@ -10,6 +10,7 @@ const sendAbsentTest = async (req, res) => {
       parentWhatsApp
     } = req.body;
 
+    // Validate required fields
     if (
       !studentName ||
       !className ||
@@ -19,10 +20,12 @@ const sendAbsentTest = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: 'studentName, className, section, date and parentWhatsApp are required'
+        message:
+          'studentName, className, section, date and parentWhatsApp are required'
       });
     }
 
+    // Send WhatsApp notification
     const result = await WhatsAppService.sendAbsentNotification({
       studentName,
       className,
@@ -31,14 +34,16 @@ const sendAbsentTest = async (req, res) => {
       parentWhatsApp
     });
 
-    if (!result.success) {
-      return res.status(result.statusCode || 400).json({
+    // WhatsApp API/service returned an error
+    if (!result || !result.success) {
+      return res.status(result?.statusCode || 400).json({
         success: false,
-        message: result.error,
-        data: result
+        message: result?.error || 'Failed to send WhatsApp notification',
+        data: result || null
       });
     }
 
+    // Success
     return res.status(200).json({
       success: true,
       message: 'WhatsApp absent notification sent successfully',

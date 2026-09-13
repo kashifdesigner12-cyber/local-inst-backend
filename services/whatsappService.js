@@ -1,5 +1,7 @@
+
 /**
  * Official Meta WhatsApp Cloud API Service
+ *
  * Meta Graph API:
  * POST https://graph.facebook.com/{API_VERSION}/{PHONE_NUMBER_ID}/messages
  */
@@ -14,15 +16,19 @@ class WhatsAppService {
     this.phoneNumberId = config.whatsapp.phoneNumberId;
     this.apiVersion = config.whatsapp.apiVersion || 'v25.0';
 
-    // Template names
-    this.absentTemplate = config.whatsapp.templates.absent || 'attendance_absent';
-    this.presentTemplate = config.whatsapp.templates.present || 'attendance_present';
+    // WhatsApp template names
+    this.absentTemplate =
+      config.whatsapp.templates.absent || 'attendance_absent';
+
+    this.presentTemplate =
+      config.whatsapp.templates.present || 'attendance_present';
+
     this.performanceTemplate =
       config.whatsapp.templates.performance || 'performance_report';
   }
 
   /**
-   * Check WhatsApp credentials
+   * Check whether WhatsApp Cloud API is configured.
    */
   isConfigured() {
     return Boolean(
@@ -33,12 +39,12 @@ class WhatsAppService {
   }
 
   /**
-   * Send payload to Meta WhatsApp Cloud API
+   * Send payload to Meta WhatsApp Cloud API.
    */
   async sendMessagePayload(payload) {
     if (!this.isConfigured()) {
       const msg =
-        'WhatsApp Cloud API credentials are not configured or placeholder in .env';
+        'WhatsApp Cloud API credentials are not configured or contain a placeholder in .env';
 
       console.warn(`[WhatsAppService] ${msg}`);
 
@@ -54,19 +60,26 @@ class WhatsAppService {
       `${this.phoneNumberId}/messages`;
 
     try {
-      console.log('[WhatsAppService] Sending WhatsApp payload:');
-      console.log(JSON.stringify({
-        ...payload,
-        // Never log the access token
-      }, null, 2));
+      console.log(
+        '[WhatsAppService] Sending WhatsApp payload:'
+      );
 
-      const response = await axios.post(url, payload, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000
-      });
+      // Never log access token.
+      console.log(
+        JSON.stringify(payload, null, 2)
+      );
+
+      const response = await axios.post(
+        url,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        }
+      );
 
       const messageId =
         response.data?.messages?.[0]?.id || 'WA_SENT';
@@ -80,7 +93,6 @@ class WhatsAppService {
         messageId,
         raw: response.data
       };
-
     } catch (error) {
       const errorDetail =
         error.response?.data?.error?.message ||
@@ -89,7 +101,9 @@ class WhatsAppService {
         'Failed to send WhatsApp message via Meta Cloud API';
 
       console.error(
-        `[WhatsAppService Error] Status: ${error.response?.status} - ${errorDetail}`
+        `[WhatsAppService Error] Status: ${
+          error.response?.status || 'N/A'
+        } - ${errorDetail}`
       );
 
       return {
@@ -102,9 +116,9 @@ class WhatsAppService {
   }
 
   /**
-   * SEND ABSENT NOTIFICATION
+   * Send absent notification.
    *
-   * Meta Template:
+   * Meta template:
    * attendance_absent
    *
    * Variables:
@@ -129,16 +143,16 @@ class WhatsAppService {
       };
     }
 
-    const formattedDate = new Date(date).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
+    const formattedDate =
+      new Date(date).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
 
-    const classWithSection = `${className}-${section}`;
+    const classWithSection =
+      `${className}-${section}`;
 
-    // IMPORTANT:
-    // This is the actual WhatsApp template sent to Meta.
     const templatePayload = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
@@ -147,7 +161,6 @@ class WhatsAppService {
       type: 'template',
 
       template: {
-        // MUST match Meta template name
         name: this.absentTemplate,
 
         language: {
@@ -177,7 +190,6 @@ class WhatsAppService {
       }
     };
 
-    // This is only for your system logs/audit.
     const readableText =
       `Dear Parent,\n\n` +
       `Your child ${studentName} was marked ABSENT today.\n\n` +
@@ -198,7 +210,7 @@ class WhatsAppService {
   }
 
   /**
-   * SEND PRESENT NOTIFICATION
+   * Send present notification.
    */
   async sendPresentNotification({
     studentName,
@@ -217,11 +229,15 @@ class WhatsAppService {
       };
     }
 
-    const formattedDate = new Date(date).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
+    const formattedDate =
+      new Date(date).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+
+    const classWithSection =
+      `${className}-${section}`;
 
     const templatePayload = {
       messaging_product: 'whatsapp',
@@ -240,6 +256,7 @@ class WhatsAppService {
         components: [
           {
             type: 'body',
+
             parameters: [
               {
                 type: 'text',
@@ -247,7 +264,7 @@ class WhatsAppService {
               },
               {
                 type: 'text',
-                text: `${className}-${section}`
+                text: String(classWithSection)
               },
               {
                 type: 'text',
@@ -262,7 +279,7 @@ class WhatsAppService {
     const readableText =
       `Dear Parent,\n\n` +
       `Your child ${studentName} attended school today.\n\n` +
-      `Class: ${className}-${section}\n` +
+      `Class: ${classWithSection}\n` +
       `Date: ${formattedDate}\n\n` +
       `Regards,\n` +
       `Local Pro 1 Institute`;
@@ -279,7 +296,7 @@ class WhatsAppService {
   }
 
   /**
-   * SEND PERFORMANCE NOTIFICATION
+   * Send performance notification.
    */
   async sendPerformanceNotification({
     studentName,
@@ -316,6 +333,7 @@ class WhatsAppService {
         components: [
           {
             type: 'body',
+
             parameters: [
               {
                 type: 'text',

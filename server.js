@@ -1,6 +1,7 @@
-// DNS Solution
-const dns = require('dns');
-dns.setServers(['1.1.1.1', '8.8.8.8']);
+/**
+ * School Management System
+ * Production-ready Express Server
+ */
 
 const express = require('express');
 const cors = require('cors');
@@ -12,16 +13,25 @@ const path = require('path');
 const config = require('./config/env');
 const connectDB = require('./config/db');
 
-// WhatsApp Routes
-const whatsappRoutes = require('./routes/whatsappRoutes');
+// --------------------------------------------------
+// Routes
+// --------------------------------------------------
 
-// Main API Routes
+const whatsappRoutes = require('./routes/whatsappRoutes');
 const apiRoutes = require('./routes');
+
+// --------------------------------------------------
+// Error Middleware
+// --------------------------------------------------
 
 const {
   notFound,
   errorHandler
 } = require('./middleware/errorMiddleware');
+
+// --------------------------------------------------
+// Express App
+// --------------------------------------------------
 
 const app = express();
 
@@ -31,14 +41,6 @@ const app = express();
 
 if (config.env === 'production') {
   app.set('trust proxy', 1);
-}
-
-// --------------------------------------------------
-// Database Connection
-// --------------------------------------------------
-
-if (process.env.NODE_ENV !== 'test_skip_db') {
-  connectDB();
 }
 
 // --------------------------------------------------
@@ -59,30 +61,38 @@ app.use(
 
 const allowedOrigins = [
   config.frontendUrl,
+  'https://localproinstitute.localpro1.net',
   'http://localhost:3000',
   'http://localhost:5173'
 ].filter(Boolean);
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow Postman, curl and server-to-server requests
+    origin: function (origin, callback) {
+      // Allow requests without Origin:
+      // Postman, curl, server-to-server etc.
       if (!origin) {
         return callback(null, true);
       }
 
-      // Development mode
-      if (config.env === 'development') {
+      // Development
+      if (config.env !== 'production') {
         return callback(null, true);
       }
 
-      // Allowed frontend origins
+      // Production allowed origins
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
+      console.warn(
+        `[CORS] Blocked origin: ${origin}`
+      );
+
       return callback(
-        new Error('CORS policy: Not allowed by CORS')
+        new Error(
+          `CORS policy: Origin ${origin} is not allowed`
+        )
       );
     },
 
@@ -92,15 +102,17 @@ app.use(
       'GET',
       'POST',
       'PUT',
-      'DELETE',
       'PATCH',
+      'DELETE',
       'OPTIONS'
     ],
 
     allowedHeaders: [
       'Content-Type',
       'Authorization'
-    ]
+    ],
+
+    optionsSuccessStatus: 204
   })
 );
 
@@ -119,7 +131,24 @@ if (config.env !== 'test') {
 }
 
 // --------------------------------------------------
-// General Rate Limiter
+// Body Parser
+// --------------------------------------------------
+
+app.use(
+  express.json({
+    limit: '10mb'
+  })
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: '10mb'
+  })
+);
+
+// --------------------------------------------------
+// Rate Limiting
 // --------------------------------------------------
 
 const generalLimiter = rateLimit({
@@ -134,7 +163,7 @@ const generalLimiter = rateLimit({
   message: {
     success: false,
     message:
-      'Too many requests from this IP, please try again after 15 minutes'
+      'Too many requests from this IP. Please try again later.'
   }
 });
 
@@ -156,27 +185,13 @@ const authLimiter = rateLimit({
   message: {
     success: false,
     message:
-      'Too many authentication attempts, please try again after 15 minutes'
+      'Too many authentication attempts. Please try again later.'
   }
 });
 
-app.use('/api/auth/login', authLimiter);
-
-// --------------------------------------------------
-// Body Parsing
-// --------------------------------------------------
-
 app.use(
-  express.json({
-    limit: '10mb'
-  })
-);
-
-app.use(
-  express.urlencoded({
-    extended: true,
-    limit: '10mb'
-  })
+  '/api/auth/login',
+  authLimiter
 );
 
 // --------------------------------------------------
@@ -195,12 +210,11 @@ app.use(
 // --------------------------------------------------
 
 app.get('/', (req, res) => {
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
     message:
       'School Management System API is live.',
-    documentation:
-      '/api-docs (or consult API_DOCUMENTATION.md)',
+    environment: config.env,
     version: '1.0.0',
 
     endpoints: {
@@ -220,8 +234,6 @@ app.get('/', (req, res) => {
       reports: '/api/reports',
       notifications:
         '/api/notifications',
-
-      // WhatsApp Testing
       whatsapp:
         '/api/whatsapp'
     }
@@ -229,16 +241,31 @@ app.get('/', (req, res) => {
 });
 
 // --------------------------------------------------
-// API Routes
+// API Health Check
 // --------------------------------------------------
 
-// WhatsApp routes
+app.get('/health', (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: 'Server is healthy',
+    environment: config.env,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// --------------------------------------------------
+// WhatsApp Routes
+// --------------------------------------------------
+
 app.use(
   '/api/whatsapp',
   whatsappRoutes
 );
 
-// Main application routes
+// --------------------------------------------------
+// Main API Routes
+// --------------------------------------------------
+
 app.use(
   '/api',
   apiRoutes
@@ -246,16 +273,14 @@ app.use(
 
 // --------------------------------------------------
 // 404 Handler
-// IMPORTANT:
-// Must come AFTER all routes.
+// IMPORTANT: Must be after all routes
 // --------------------------------------------------
 
 app.use(notFound);
 
 // --------------------------------------------------
 // Global Error Handler
-// IMPORTANT:
-// Must be the LAST middleware.
+// IMPORTANT: Must be LAST
 // --------------------------------------------------
 
 app.use(errorHandler);
@@ -266,47 +291,190 @@ app.use(errorHandler);
 
 const PORT = config.port;
 
-let server;
+let server = null;
 
-if (process.env.NODE_ENV !== 'test') {
-  server = app.listen(PORT, () => {
-    console.log(`
-=====================================================
-🚀 School Management System Server Running
-📡 Environment : ${config.env.toUpperCase()}
-🔌 Port        : ${PORT}
-🌐 API URL     : http://localhost:${PORT}/api
-🏥 Health Check: http://localhost:${PORT}/api/health
-📱 WhatsApp    : http://localhost:${PORT}/api/whatsapp
-=====================================================
-    `);
-  });
+/**
+ * Start server
+ */
+const startServer = async () => {
+  try {
+    console.log('');
+    console.log(
+      '====================================================='
+    );
+    console.log(
+      '🚀 Starting School Management System'
+    );
+    console.log(
+      `🌐 Environment : ${config.env.toUpperCase()}`
+    );
+    console.log(
+      `🔌 Port        : ${PORT}`
+    );
+    console.log(
+      `🌍 Frontend    : ${config.frontendUrl}`
+    );
+    console.log(
+      '====================================================='
+    );
+
+    // ------------------------------------------------
+    // Start HTTP server FIRST
+    // This is important for hosting platforms.
+    // ------------------------------------------------
+
+    server = app.listen(
+      PORT,
+      '0.0.0.0',
+      () => {
+        console.log('');
+        console.log(
+          '====================================================='
+        );
+        console.log(
+          '✅ School Management API is running'
+        );
+        console.log(
+          `📡 Environment : ${config.env.toUpperCase()}`
+        );
+        console.log(
+          `🔌 Port        : ${PORT}`
+        );
+        console.log(
+          `🏠 Local       : http://localhost:${PORT}`
+        );
+        console.log(
+          `❤️  Health      : http://localhost:${PORT}/health`
+        );
+        console.log(
+          `🩺 API Health  : http://localhost:${PORT}/api/health`
+        );
+        console.log(
+          '====================================================='
+        );
+        console.log('');
+      }
+    );
+
+    // ------------------------------------------------
+    // Connect MongoDB
+    // Server remains available even if DB connection
+    // temporarily fails.
+    // ------------------------------------------------
+
+    try {
+      await connectDB();
+
+      console.log(
+        '✅ MongoDB connection established'
+      );
+    } catch (dbError) {
+      console.error(
+        '❌ MongoDB connection failed:'
+      );
+
+      console.error(
+        dbError.message || dbError
+      );
+
+      console.error(
+        '⚠️ Server is still running. Database-dependent API requests may fail.'
+      );
+    }
+  } catch (error) {
+    console.error(
+      '❌ Failed to start server:'
+    );
+
+    console.error(
+      error.stack || error
+    );
+
+    process.exit(1);
+  }
+};
+
+// --------------------------------------------------
+// Start only when this file is executed directly
+// --------------------------------------------------
+
+if (require.main === module) {
+  startServer();
 }
 
 // --------------------------------------------------
 // Graceful Shutdown
 // --------------------------------------------------
 
-const shutdown = () => {
+const shutdown = (signal) => {
+  console.log('');
   console.log(
-    'Received kill signal, shutting down gracefully...'
+    `⚠️ ${signal} received. Shutting down gracefully...`
   );
 
-  if (server) {
-    server.close(() => {
-      console.log(
-        'Closed remaining connections.'
-      );
-
-      process.exit(0);
-    });
-  } else {
+  if (!server) {
     process.exit(0);
+    return;
   }
+
+  server.close(() => {
+    console.log(
+      '✅ HTTP server closed.'
+    );
+
+    process.exit(0);
+  });
+
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    console.error(
+      '⚠️ Forced shutdown after timeout.'
+    );
+
+    process.exit(1);
+  }, 10000).unref();
 };
 
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+process.on(
+  'SIGTERM',
+  () => shutdown('SIGTERM')
+);
+
+process.on(
+  'SIGINT',
+  () => shutdown('SIGINT')
+);
+
+// --------------------------------------------------
+// Handle Unexpected Errors
+// --------------------------------------------------
+
+process.on(
+  'unhandledRejection',
+  (reason) => {
+    console.error(
+      '❌ Unhandled Promise Rejection:'
+    );
+
+    console.error(reason);
+  }
+);
+
+process.on(
+  'uncaughtException',
+  (error) => {
+    console.error(
+      '❌ Uncaught Exception:'
+    );
+
+    console.error(error);
+
+    // Give the server a moment to log before exit
+    setTimeout(() => {
+      process.exit(1);
+    }, 1000);
+  }
+);
 
 // --------------------------------------------------
 // Export App

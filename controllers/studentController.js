@@ -1,9 +1,3 @@
-/**
- * Student Controller
- * Handles Student Registration, Management, Filtering, Pagination,
- * Photo Uploads, and Student Documents
- */
-
 const Student = require('../models/Student');
 const ApiResponse = require('../utils/apiResponse');
 const { isValidObjectId } = require('../utils/validators');
@@ -42,7 +36,6 @@ const createStudent = async (req, res, next) => {
       status,
       parentName,
       parentPhone,
-      parentWhatsApp,
       parentEmail,
       dateOfBirth,
       address,
@@ -54,13 +47,12 @@ const createStudent = async (req, res, next) => {
       !admissionNo ||
       !className ||
       !section ||
-      !parentName ||
-      !parentWhatsApp
+      !parentName
     ) {
       return ApiResponse.error(
         res,
         400,
-        'Please provide all required fields: name, admissionNo, className, section, parentName, parentWhatsApp'
+        'Please provide all required fields: name, admissionNo, className, section, parentName'
       );
     }
 
@@ -119,8 +111,6 @@ const createStudent = async (req, res, next) => {
         ? String(parentPhone).trim()
         : '',
 
-      parentWhatsApp: String(parentWhatsApp).trim(),
-
       parentEmail: parentEmail
         ? String(parentEmail).trim().toLowerCase()
         : '',
@@ -145,13 +135,11 @@ const createStudent = async (req, res, next) => {
       action: 'STUDENT_CREATED',
       entity: 'Student',
       entityId: student._id.toString(),
-
       details: {
         admissionNo: student.admissionNo,
         name: student.name,
         className: student.className
       },
-
       ip: req.ip
     });
 
@@ -241,8 +229,7 @@ const getStudents = async (req, res, next) => {
         { name: searchRegex },
         { admissionNo: searchRegex },
         { parentName: searchRegex },
-        { parentPhone: searchRegex },
-        { parentWhatsApp: searchRegex }
+        { parentPhone: searchRegex }
       ];
     }
 
@@ -423,7 +410,6 @@ const updateStudent = async (req, res, next) => {
       'status',
       'parentName',
       'parentPhone',
-      'parentWhatsApp',
       'parentEmail',
       'dateOfBirth',
       'address',
@@ -494,11 +480,6 @@ const updateStudent = async (req, res, next) => {
     if (updates.parentPhone !== undefined) {
       updates.parentPhone =
         String(updates.parentPhone).trim();
-    }
-
-    if (updates.parentWhatsApp !== undefined) {
-      updates.parentWhatsApp =
-        String(updates.parentWhatsApp).trim();
     }
 
     if (updates.parentEmail !== undefined) {
@@ -603,12 +584,10 @@ const deleteStudent = async (req, res, next) => {
       action: 'STUDENT_DELETED',
       entity: 'Student',
       entityId: id,
-
       details: {
         admissionNo: student.admissionNo,
         name: student.name
       },
-
       ip: req.ip
     });
 
@@ -730,15 +709,11 @@ const addStudentDocument = async (req, res, next) => {
 
     const document = {
       type: documentType.toUpperCase(),
-
       name: uploadedFile.originalname,
-
       fileUrl:
         `/uploads/students/documents/${uploadedFile.filename}`,
-
       mimeType:
         uploadedFile.mimetype || '',
-
       uploadedAt: new Date()
     };
 
@@ -764,18 +739,14 @@ const addStudentDocument = async (req, res, next) => {
       action: 'STUDENT_DOCUMENT_ADDED',
       entity: 'Student',
       entityId: id,
-
       details: {
         documentId:
           addedDocument._id.toString(),
-
         documentType:
           addedDocument.type,
-
         fileName:
           addedDocument.name
       },
-
       ip: req.ip
     });
 
@@ -904,10 +875,8 @@ const deleteStudentDocument = async (
     const documentDetails = {
       documentId:
         document._id.toString(),
-
       type:
         document.type,
-
       name:
         document.name
     };
@@ -951,3 +920,4 @@ module.exports = {
   getStudentDocuments,
   deleteStudentDocument
 };
+

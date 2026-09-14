@@ -1,10 +1,3 @@
-/**
- * Comprehensive Automated Test Runner
- * Executes end-to-end testing against all School Management System REST APIs
- * 
- * Usage: npm test
- */
-
 const http = require('http');
 const mongoose = require('mongoose');
 const app = require('../server');
@@ -41,16 +34,20 @@ const request = (options, postData = null) => {
   return new Promise((resolve, reject) => {
     const req = http.request(options, (res) => {
       let data = '';
+
       res.on('data', (chunk) => {
         data += chunk;
       });
+
       res.on('end', () => {
         let parsed = null;
+
         try {
           parsed = data ? JSON.parse(data) : {};
         } catch (e) {
           parsed = { raw: data };
         }
+
         resolve({
           statusCode: res.statusCode,
           headers: res.headers,
@@ -64,7 +61,11 @@ const request = (options, postData = null) => {
     });
 
     if (postData) {
-      const payload = typeof postData === 'string' ? postData : JSON.stringify(postData);
+      const payload =
+        typeof postData === 'string'
+          ? postData
+          : JSON.stringify(postData);
+
       req.write(payload);
     }
 
@@ -74,6 +75,7 @@ const request = (options, postData = null) => {
 
 const assertTest = (testName, condition, details = '') => {
   totalTests++;
+
   if (condition) {
     passedTests++;
     console.log(`  ✅ [PASS] ${testName}`);
@@ -105,31 +107,69 @@ const runSuite = async () => {
 
   // Cleanup test collections
   await Promise.all([
-    User.deleteMany({ email: { $in: ['test_admin@school.com', 'test_teacher@school.com'] } }),
-    Student.deleteMany({ admissionNo: { $in: ['TEST-ADM-001', 'TEST-ADM-002', 'DUP-001'] } }),
-    Attendance.deleteMany({ className: 'TestGrade7' }),
-    Fee.deleteMany({ notes: 'Test Fee Record' }),
-    Transaction.deleteMany({ description: { $regex: /^TEST_/ } }),
-    Staff.deleteMany({ email: 'test_staff@school.com' }),
-    Exam.deleteMany({ name: 'Test Midterm 2026' }),
-    Notification.deleteMany({ message: { $regex: /Test/i } })
+    User.deleteMany({
+      email: {
+        $in: ['test_admin@school.com', 'test_teacher@school.com']
+      }
+    }),
+
+    Student.deleteMany({
+      admissionNo: {
+        $in: ['TEST-ADM-001', 'TEST-ADM-002', 'DUP-001']
+      }
+    }),
+
+    Attendance.deleteMany({
+      className: 'TestGrade7'
+    }),
+
+    Fee.deleteMany({
+      notes: 'Test Fee Record'
+    }),
+
+    Transaction.deleteMany({
+      description: {
+        $regex: /^TEST_/
+      }
+    }),
+
+    Staff.deleteMany({
+      email: 'test_staff@school.com'
+    }),
+
+    Exam.deleteMany({
+      name: 'Test Midterm 2026'
+    }),
+
+    Notification.deleteMany({
+      message: {
+        $regex: /Test/i
+      }
+    })
   ]);
 
   try {
     // -------------------------------------------------------------
     console.log(`\n🔹 1. HEALTH CHECK & ROOT`);
     // -------------------------------------------------------------
+
     const healthRes = await request({
       hostname: 'localhost',
       port: testPort,
       path: '/api/health',
       method: 'GET'
     });
-    assertTest('GET /api/health returns 200 and healthy status', healthRes.statusCode === 200 && healthRes.body.success === true);
+
+    assertTest(
+      'GET /api/health returns 200 and healthy status',
+      healthRes.statusCode === 200 &&
+        healthRes.body.success === true
+    );
 
     // -------------------------------------------------------------
     console.log(`\n🔹 2. AUTHENTICATION & USERS`);
     // -------------------------------------------------------------
+
     // Register Admin
     const adminRegRes = await request(
       {
@@ -137,7 +177,9 @@ const runSuite = async () => {
         port: testPort,
         path: '/api/auth/register',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json'
+        }
       },
       {
         name: 'Test Admin',
@@ -147,7 +189,13 @@ const runSuite = async () => {
         phone: '03001234567'
       }
     );
-    assertTest('POST /api/auth/register (Admin) returns 201', adminRegRes.statusCode === 201 && adminRegRes.body.data?.token);
+
+    assertTest(
+      'POST /api/auth/register (Admin) returns 201',
+      adminRegRes.statusCode === 201 &&
+        adminRegRes.body.data?.token
+    );
+
     adminToken = adminRegRes.body.data?.token;
 
     // Register Teacher
@@ -157,7 +205,9 @@ const runSuite = async () => {
         port: testPort,
         path: '/api/auth/register',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json'
+        }
       },
       {
         name: 'Test Teacher',
@@ -167,7 +217,12 @@ const runSuite = async () => {
         phone: '03119876543'
       }
     );
-    assertTest('POST /api/auth/register (Teacher) returns 201', teacherRegRes.statusCode === 201);
+
+    assertTest(
+      'POST /api/auth/register (Teacher) returns 201',
+      teacherRegRes.statusCode === 201
+    );
+
     teacherToken = teacherRegRes.body.data?.token;
 
     // Login Teacher
@@ -177,14 +232,21 @@ const runSuite = async () => {
         port: testPort,
         path: '/api/auth/login',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json'
+        }
       },
       {
         email: 'test_teacher@school.com',
         password: 'TeacherPassword123'
       }
     );
-    assertTest('POST /api/auth/login returns 200 and valid JWT', loginRes.statusCode === 200 && !loginRes.body.data.user.password);
+
+    assertTest(
+      'POST /api/auth/login returns 200 and valid JWT',
+      loginRes.statusCode === 200 &&
+        !loginRes.body.data.user.password
+    );
 
     // GET /api/auth/me
     const meRes = await request({
@@ -192,14 +254,22 @@ const runSuite = async () => {
       port: testPort,
       path: '/api/auth/me',
       method: 'GET',
-      headers: { Authorization: `Bearer ${teacherToken}` }
+      headers: {
+        Authorization: `Bearer ${teacherToken}`
+      }
     });
-    assertTest('GET /api/auth/me returns teacher profile', meRes.statusCode === 200 && meRes.body.data.user.role === 'TEACHER');
+
+    assertTest(
+      'GET /api/auth/me returns teacher profile',
+      meRes.statusCode === 200 &&
+        meRes.body.data.user.role === 'TEACHER'
+    );
 
     // -------------------------------------------------------------
-    console.log(`\n🔹 3. STUDENT MANAGEMENT (CRUD, NORMALIZATION, FILTERS)`);
+    console.log(`\n🔹 3. STUDENT MANAGEMENT (CRUD, FILTERS)`);
     // -------------------------------------------------------------
-    // Create Student with Pakistani local phone format 03001234567 -> should normalize to +923001234567
+
+    // Create Student
     const studentRes = await request(
       {
         hostname: 'localhost',
@@ -221,18 +291,18 @@ const runSuite = async () => {
         status: 'ACTIVE',
         parentName: 'Muhammad Raza',
         parentPhone: '03001234567',
-        parentWhatsApp: '03001234567',
         parentEmail: 'parent_aliraza@example.com',
         address: 'House 123, Street 4, Lahore'
       }
     );
-    assertTest('POST /api/students returns 201', studentRes.statusCode === 201);
+
+    assertTest(
+      'POST /api/students returns 201',
+      studentRes.statusCode === 201
+    );
+
     const createdStudent = studentRes.body.data?.student;
     testStudentId = createdStudent?._id;
-    assertTest(
-      'Pakistani WhatsApp number normalized to +923001234567',
-      createdStudent?.parentWhatsApp === '+923001234567'
-    );
 
     // Duplicate Admission Number Test
     const dupStudentRes = await request(
@@ -252,10 +322,14 @@ const runSuite = async () => {
         className: 'TestGrade7',
         section: 'A',
         parentName: 'Parent',
-        parentWhatsApp: '03001112233'
+        parentPhone: '03001112233'
       }
     );
-    assertTest('Duplicate admission number returns 409 Conflict', dupStudentRes.statusCode === 409);
+
+    assertTest(
+      'Duplicate admission number returns 409 Conflict',
+      dupStudentRes.statusCode === 409
+    );
 
     // Get Students with Filter
     const listStudentsRes = await request({
@@ -263,9 +337,16 @@ const runSuite = async () => {
       port: testPort,
       path: '/api/students?className=TestGrade7&search=Ali',
       method: 'GET',
-      headers: { Authorization: `Bearer ${teacherToken}` }
+      headers: {
+        Authorization: `Bearer ${teacherToken}`
+      }
     });
-    assertTest('GET /api/students filters and searches properly', listStudentsRes.statusCode === 200 && listStudentsRes.body.data.students.length > 0);
+
+    assertTest(
+      'GET /api/students filters and searches properly',
+      listStudentsRes.statusCode === 200 &&
+        listStudentsRes.body.data.students.length > 0
+    );
 
     // Update Student
     const updateStudentRes = await request(
@@ -284,11 +365,17 @@ const runSuite = async () => {
         address: 'Updated Address, Lahore'
       }
     );
-    assertTest('PUT /api/students/:id updates student record', updateStudentRes.statusCode === 200 && updateStudentRes.body.data.student.rollNo === '15');
+
+    assertTest(
+      'PUT /api/students/:id updates student record',
+      updateStudentRes.statusCode === 200 &&
+        updateStudentRes.body.data.student.rollNo === '15'
+    );
 
     // -------------------------------------------------------------
-    console.log(`\n🔹 4. ATTENDANCE & WHATSAPP INTEGRATION`);
+    console.log(`\n🔹 4. ATTENDANCE`);
     // -------------------------------------------------------------
+
     // Mark Present
     const attPresentRes = await request(
       {
@@ -308,9 +395,14 @@ const runSuite = async () => {
         remarks: 'On time'
       }
     );
-    assertTest('POST /api/attendance (PRESENT) saves attendance', attPresentRes.statusCode === 201 && attPresentRes.body.data.attendance.status === 'PRESENT');
 
-    // Mark ABSENT -> Should save attendance and trigger WhatsApp notification without crashing
+    assertTest(
+      'POST /api/attendance (PRESENT) saves attendance',
+      attPresentRes.statusCode === 201 &&
+        attPresentRes.body.data.attendance.status === 'PRESENT'
+    );
+
+    // Mark Absent
     const attAbsentRes = await request(
       {
         hostname: 'localhost',
@@ -329,11 +421,12 @@ const runSuite = async () => {
         remarks: 'Uninformed absence'
       }
     );
-    assertTest('POST /api/attendance (ABSENT) updates status and dispatches WhatsApp notification', attAbsentRes.statusCode === 201 && attAbsentRes.body.data.attendance.status === 'ABSENT');
 
-    // Verify Notification collection logged the attempt
-    const notifLog = await Notification.findOne({ student: testStudentId, type: 'ATTENDANCE' });
-    assertTest('Notification record saved in MongoDB for ABSENT student', notifLog !== null && notifLog.channel === 'WHATSAPP');
+    assertTest(
+      'POST /api/attendance (ABSENT) saves attendance',
+      attAbsentRes.statusCode === 201 &&
+        attAbsentRes.body.data.attendance.status === 'ABSENT'
+    );
 
     // Student Attendance History
     const studentAttRes = await request({
@@ -341,14 +434,24 @@ const runSuite = async () => {
       port: testPort,
       path: `/api/attendance/student/${testStudentId}`,
       method: 'GET',
-      headers: { Authorization: `Bearer ${teacherToken}` }
+      headers: {
+        Authorization: `Bearer ${teacherToken}`
+      }
     });
-    assertTest('GET /api/attendance/student/:id returns stats and history', studentAttRes.statusCode === 200 && studentAttRes.body.data.stats.totalDays >= 1);
+
+    assertTest(
+      'GET /api/attendance/student/:id returns stats and history',
+      studentAttRes.statusCode === 200 &&
+        studentAttRes.body.data.stats.totalDays >= 1
+    );
 
     // -------------------------------------------------------------
     console.log(`\n🔹 5. FEES MANAGEMENT & FORMULAS`);
     // -------------------------------------------------------------
-    // Formula verification: amount = 5000, discount = 500, paid = 3000 -> remaining should be 1500, status PARTIAL
+
+    // Formula verification:
+    // amount = 5000, discount = 500, paid = 3000
+    // remaining should be 1500, status PARTIAL
     const feeRes = await request(
       {
         hostname: 'localhost',
@@ -371,7 +474,14 @@ const runSuite = async () => {
         notes: 'Test Fee Record'
       }
     );
-    assertTest('POST /api/fees creates fee and calculates remainingAmount (1500)', feeRes.statusCode === 201 && feeRes.body.data.fee.remainingAmount === 1500 && feeRes.body.data.fee.status === 'PARTIAL');
+
+    assertTest(
+      'POST /api/fees creates fee and calculates remainingAmount (1500)',
+      feeRes.statusCode === 201 &&
+        feeRes.body.data.fee.remainingAmount === 1500 &&
+        feeRes.body.data.fee.status === 'PARTIAL'
+    );
+
     testFeeId = feeRes.body.data?.fee?._id;
 
     // Fee Summary
@@ -380,13 +490,21 @@ const runSuite = async () => {
       port: testPort,
       path: '/api/fees/summary',
       method: 'GET',
-      headers: { Authorization: `Bearer ${adminToken}` }
+      headers: {
+        Authorization: `Bearer ${adminToken}`
+      }
     });
-    assertTest('GET /api/fees/summary aggregates financial data', feeSummaryRes.statusCode === 200 && feeSummaryRes.body.data.overview.totalBilled >= 5000);
+
+    assertTest(
+      'GET /api/fees/summary aggregates financial data',
+      feeSummaryRes.statusCode === 200 &&
+        feeSummaryRes.body.data.overview.totalBilled >= 5000
+    );
 
     // -------------------------------------------------------------
     console.log(`\n🔹 6. TRANSACTIONS (INCOME & EXPENSE)`);
     // -------------------------------------------------------------
+
     // Income
     const incomeRes = await request(
       {
@@ -407,7 +525,12 @@ const runSuite = async () => {
         paymentMethod: 'BANK'
       }
     );
-    assertTest('POST /api/transactions (INCOME) returns 201', incomeRes.statusCode === 201);
+
+    assertTest(
+      'POST /api/transactions (INCOME) returns 201',
+      incomeRes.statusCode === 201
+    );
+
     testTransactionId = incomeRes.body.data?.transaction?._id;
 
     // Expense
@@ -430,21 +553,33 @@ const runSuite = async () => {
         paymentMethod: 'ONLINE'
       }
     );
-    assertTest('POST /api/transactions (EXPENSE) returns 201', expenseRes.statusCode === 201);
 
-    // Transaction Summary (Balance = Income - Expense)
+    assertTest(
+      'POST /api/transactions (EXPENSE) returns 201',
+      expenseRes.statusCode === 201
+    );
+
+    // Transaction Summary
     const txSummaryRes = await request({
       hostname: 'localhost',
       port: testPort,
       path: '/api/transactions/summary',
       method: 'GET',
-      headers: { Authorization: `Bearer ${adminToken}` }
+      headers: {
+        Authorization: `Bearer ${adminToken}`
+      }
     });
-    assertTest('GET /api/transactions/summary computes totalIncome, totalExpense, balance', txSummaryRes.statusCode === 200 && txSummaryRes.body.data.totalIncome >= 25000);
+
+    assertTest(
+      'GET /api/transactions/summary computes totalIncome, totalExpense, balance',
+      txSummaryRes.statusCode === 200 &&
+        txSummaryRes.body.data.totalIncome >= 25000
+    );
 
     // -------------------------------------------------------------
     console.log(`\n🔹 7. STAFF, STAFF ATTENDANCE & LEAVES`);
     // -------------------------------------------------------------
+
     const staffRes = await request(
       {
         hostname: 'localhost',
@@ -465,7 +600,12 @@ const runSuite = async () => {
         salary: 60000
       }
     );
-    assertTest('POST /api/staff creates staff member', staffRes.statusCode === 201);
+
+    assertTest(
+      'POST /api/staff creates staff member',
+      staffRes.statusCode === 201
+    );
+
     testStaffId = staffRes.body.data?.staff?._id;
 
     // Staff Attendance
@@ -487,28 +627,37 @@ const runSuite = async () => {
         remarks: 'Present on duty'
       }
     );
-    assertTest('POST /api/staff-attendance marks staff attendance', staffAttRes.statusCode === 201);
+
+    assertTest(
+      'POST /api/staff-attendance marks staff attendance',
+      staffAttRes.statusCode === 201
+    );
 
     // Leave request & approval
     const leaveRes = await request(
       {
         hostname: 'localhost',
-        port: testPort,
-        path: '/api/leaves',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${adminToken}`
-        }
-      },
-      {
-        staffId: testStaffId,
-        startDate: '2026-09-10',
-        endDate: '2026-09-12',
-        reason: 'Family event'
+      port: testPort,
+      path: '/api/leaves',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${adminToken}`
       }
+    },
+    {
+      staffId: testStaffId,
+      startDate: '2026-09-10',
+      endDate: '2026-09-12',
+      reason: 'Family event'
+    }
+  );
+
+    assertTest(
+      'POST /api/leaves creates leave request',
+      leaveRes.statusCode === 201
     );
-    assertTest('POST /api/leaves creates leave request', leaveRes.statusCode === 201);
+
     const leaveId = leaveRes.body.data?.leave?._id;
 
     const leaveApproveRes = await request(
@@ -527,11 +676,17 @@ const runSuite = async () => {
         remarks: 'Approved by Principal'
       }
     );
-    assertTest('PUT /api/leaves/:id approves leave application', leaveApproveRes.statusCode === 200 && leaveApproveRes.body.data.leave.status === 'APPROVED');
+
+    assertTest(
+      'PUT /api/leaves/:id approves leave application',
+      leaveApproveRes.statusCode === 200 &&
+        leaveApproveRes.body.data.leave.status === 'APPROVED'
+    );
 
     // -------------------------------------------------------------
-    console.log(`\n🔹 8. EXAMS, RESULTS & PARENT PERFORMANCE NOTIFICATION`);
+    console.log(`\n🔹 8. EXAMS, RESULTS & PARENT PERFORMANCE EMAIL`);
     // -------------------------------------------------------------
+
     // Create Exam
     const examRes = await request(
       {
@@ -553,10 +708,16 @@ const runSuite = async () => {
         academicYear: '2026-2027'
       }
     );
-    assertTest('POST /api/exams creates exam', examRes.statusCode === 201);
+
+    assertTest(
+      'POST /api/exams creates exam',
+      examRes.statusCode === 201
+    );
+
     testExamId = examRes.body.data?.exam?._id;
 
-    // Record Result: Mathematics (88/100 -> 88%, Grade A)
+    // Record Result: Mathematics
+    // 88/100 -> 88%, Grade A
     const result1Res = await request(
       {
         hostname: 'localhost',
@@ -577,9 +738,15 @@ const runSuite = async () => {
         remarks: 'Great analytical skills'
       }
     );
-    assertTest('POST /api/results calculates percentage (88%) and Grade (A)', result1Res.statusCode === 201 && result1Res.body.data.result.grade === 'A');
 
-    // Record Result: Science (94/100 -> 94%, Grade A+)
+    assertTest(
+      'POST /api/results calculates percentage (88%) and Grade (A)',
+      result1Res.statusCode === 201 &&
+        result1Res.body.data.result.grade === 'A'
+    );
+
+    // Record Result: Science
+    // 94/100 -> 94%, Grade A+
     await request(
       {
         hostname: 'localhost',
@@ -617,61 +784,89 @@ const runSuite = async () => {
         examId: testExamId
       }
     );
-    assertTest('POST /api/results/send-report dispatches performance email report to parent', reportSendRes.statusCode === 200 && reportSendRes.body.data.summary.totalObtained === 182);
+
+    assertTest(
+      'POST /api/results/send-report dispatches performance email report to parent',
+      reportSendRes.statusCode === 200 &&
+        reportSendRes.body.data.summary.totalObtained === 182
+    );
 
     // -------------------------------------------------------------
     console.log(`\n🔹 9. ADMIN DASHBOARD & AGGREGATED METRICS`);
     // -------------------------------------------------------------
+
     const dashRes = await request({
       hostname: 'localhost',
       port: testPort,
       path: '/api/dashboard',
       method: 'GET',
-      headers: { Authorization: `Bearer ${adminToken}` }
+      headers: {
+        Authorization: `Bearer ${adminToken}`
+      }
     });
-    assertTest('GET /api/dashboard returns all required aggregated metrics', 
+
+    assertTest(
+      'GET /api/dashboard returns all required aggregated metrics',
       dashRes.statusCode === 200 &&
-      dashRes.body.data.totalStudents !== undefined &&
-      dashRes.body.data.totalStaff !== undefined &&
-      dashRes.body.data.presentToday !== undefined &&
-      dashRes.body.data.absentToday !== undefined &&
-      dashRes.body.data.totalFees !== undefined &&
-      dashRes.body.data.totalIncome !== undefined &&
-      Array.isArray(dashRes.body.data.recentStudents)
+        dashRes.body.data.totalStudents !== undefined &&
+        dashRes.body.data.totalStaff !== undefined &&
+        dashRes.body.data.presentToday !== undefined &&
+        dashRes.body.data.absentToday !== undefined &&
+        dashRes.body.data.totalFees !== undefined &&
+        dashRes.body.data.totalIncome !== undefined &&
+        Array.isArray(dashRes.body.data.recentStudents)
     );
 
     // -------------------------------------------------------------
     console.log(`\n🔹 10. SYSTEM REPORTS`);
     // -------------------------------------------------------------
+
     const repAttRes = await request({
       hostname: 'localhost',
       port: testPort,
       path: '/api/reports/attendance?from=2026-09-01&to=2026-09-10',
       method: 'GET',
-      headers: { Authorization: `Bearer ${adminToken}` }
+      headers: {
+        Authorization: `Bearer ${adminToken}`
+      }
     });
-    assertTest('GET /api/reports/attendance generates date-range report', repAttRes.statusCode === 200);
+
+    assertTest(
+      'GET /api/reports/attendance generates date-range report',
+      repAttRes.statusCode === 200
+    );
 
     const repFeesRes = await request({
       hostname: 'localhost',
       port: testPort,
       path: '/api/reports/fees',
       method: 'GET',
-      headers: { Authorization: `Bearer ${adminToken}` }
+      headers: {
+        Authorization: `Bearer ${adminToken}`
+      }
     });
-    assertTest('GET /api/reports/fees generates fee report', repFeesRes.statusCode === 200);
+
+    assertTest(
+      'GET /api/reports/fees generates fee report',
+      repFeesRes.statusCode === 200
+    );
 
     // -------------------------------------------------------------
     console.log(`\n🔹 11. SECURITY, VALIDATION & ERROR HANDLING`);
     // -------------------------------------------------------------
-    // Unauthorized request (No Token)
+
+    // Unauthorized request
     const unauthRes = await request({
       hostname: 'localhost',
       port: testPort,
       path: '/api/dashboard',
       method: 'GET'
     });
-    assertTest('Request without token returns 401 Unauthorized', unauthRes.statusCode === 401);
+
+    assertTest(
+      'Request without token returns 401 Unauthorized',
+      unauthRes.statusCode === 401
+    );
 
     // Invalid Token
     const invalidTokenRes = await request({
@@ -679,19 +874,31 @@ const runSuite = async () => {
       port: testPort,
       path: '/api/dashboard',
       method: 'GET',
-      headers: { Authorization: 'Bearer invalid_garbage_token_123' }
+      headers: {
+        Authorization: 'Bearer invalid_garbage_token_123'
+      }
     });
-    assertTest('Invalid JWT token returns 401', invalidTokenRes.statusCode === 401);
 
-    // Teacher accessing Admin-only endpoint (RBAC check)
+    assertTest(
+      'Invalid JWT token returns 401',
+      invalidTokenRes.statusCode === 401
+    );
+
+    // Teacher accessing Admin-only endpoint
     const rbacRes = await request({
       hostname: 'localhost',
       port: testPort,
       path: '/api/dashboard',
       method: 'GET',
-      headers: { Authorization: `Bearer ${teacherToken}` }
+      headers: {
+        Authorization: `Bearer ${teacherToken}`
+      }
     });
-    assertTest('Teacher accessing Admin-only route returns 403 Forbidden', rbacRes.statusCode === 403);
+
+    assertTest(
+      'Teacher accessing Admin-only route returns 403 Forbidden',
+      rbacRes.statusCode === 403
+    );
 
     // Bad ObjectId
     const badIdRes = await request({
@@ -699,9 +906,15 @@ const runSuite = async () => {
       port: testPort,
       path: '/api/students/invalid-object-id-12345',
       method: 'GET',
-      headers: { Authorization: `Bearer ${adminToken}` }
+      headers: {
+        Authorization: `Bearer ${adminToken}`
+      }
     });
-    assertTest('Invalid ObjectId parameter returns 400 Bad Request', badIdRes.statusCode === 400);
+
+    assertTest(
+      'Invalid ObjectId parameter returns 400 Bad Request',
+      badIdRes.statusCode === 400
+    );
 
     // Missing required fields validation
     const valErrRes = await request(
@@ -715,16 +928,22 @@ const runSuite = async () => {
           Authorization: `Bearer ${adminToken}`
         }
       },
-      { name: 'Incomplete Student' }
+      {
+        name: 'Incomplete Student'
+      }
     );
-    assertTest('Missing required fields returns 400 Validation Error', valErrRes.statusCode === 400);
 
+    assertTest(
+      'Missing required fields returns 400 Validation Error',
+      valErrRes.statusCode === 400
+    );
   } catch (error) {
     console.error('Fatal Test Exception:', error);
   } finally {
     if (server) {
       server.close();
     }
+
     if (mongoose.connection.readyState === 1) {
       await mongoose.disconnect();
     }
@@ -734,16 +953,25 @@ const runSuite = async () => {
     console.log(`   Total Tests Executed : ${totalTests}`);
     console.log(`   Passed               : ${passedTests}`);
     console.log(`   Failed               : ${failedTests}`);
-    console.log(`   Success Rate         : ${Math.round((passedTests / totalTests) * 100)}%`);
+    console.log(
+      `   Success Rate         : ${
+        totalTests > 0
+          ? Math.round((passedTests / totalTests) * 100)
+          : 0
+      }%`
+    );
     console.log(`=====================================================\n`);
 
     if (failedTests > 0) {
       process.exit(1);
     } else {
-      console.log('🎉 All School Management System API Tests Passed Successfully!\n');
+      console.log(
+        '🎉 All School Management System API Tests Passed Successfully!\n'
+      );
       process.exit(0);
     }
   }
 };
 
 runSuite();
+

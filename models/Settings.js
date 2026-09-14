@@ -1,8 +1,3 @@
-/**
- * School Settings Model
- * Stores global school/system configuration
- */
-
 const mongoose = require('mongoose');
 
 const settingsSchema = new mongoose.Schema(
@@ -79,11 +74,6 @@ const settingsSchema = new mongoose.Schema(
       emailEnabled: {
         type: Boolean,
         default: true
-      },
-
-      whatsappEnabled: {
-        type: Boolean,
-        default: false
       }
     },
 
@@ -104,3 +94,4 @@ const settingsSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model('Settings', settingsSchema);
+

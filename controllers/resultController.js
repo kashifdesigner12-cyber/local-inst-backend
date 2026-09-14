@@ -1,27 +1,25 @@
-/**
- * Student Exam Result Controller
- * Handles Marks Entry, Calculation, and Dispatching Parent Performance Reports
- */
-
 const Result = require('../models/Result');
 const Student = require('../models/Student');
 const Exam = require('../models/Exam');
 const ApiResponse = require('../utils/apiResponse');
 const { isValidObjectId } = require('../utils/validators');
+
 const {
   getStudentExamPerformance,
   sendPerformanceReportToParent
 } = require('../services/performanceService');
+
 const { logAction } = require('../services/auditService');
 
 const MAX_LIMIT = 100;
 
 const escapeRegex = (value) => {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 };
 
 const parsePagination = (query) => {
   const page = Math.max(parseInt(query.page, 10) || 1, 1);
+
   const limit = Math.min(
     Math.max(parseInt(query.limit, 10) || 10, 1),
     MAX_LIMIT
@@ -51,7 +49,9 @@ const getSort = (sortBy, order) => {
 
   const direction = order === 'asc' ? 1 : -1;
 
-  return { [field]: direction };
+  return {
+    [field]: direction
+  };
 };
 
 /**
@@ -95,7 +95,11 @@ const createResult = async (req, res, next) => {
     const cleanSubject = String(subject).trim();
 
     if (!cleanSubject) {
-      return ApiResponse.error(res, 400, 'Subject is required');
+      return ApiResponse.error(
+        res,
+        400,
+        'Subject is required'
+      );
     }
 
     const numTotal = Number(totalMarks);
@@ -128,13 +132,21 @@ const createResult = async (req, res, next) => {
     const student = await Student.findById(studentId);
 
     if (!student) {
-      return ApiResponse.error(res, 404, 'Student not found');
+      return ApiResponse.error(
+        res,
+        404,
+        'Student not found'
+      );
     }
 
     const exam = await Exam.findById(examId);
 
     if (!exam) {
-      return ApiResponse.error(res, 404, 'Exam not found');
+      return ApiResponse.error(
+        res,
+        404,
+        'Exam not found'
+      );
     }
 
     // Upsert result for student + exam + subject
@@ -251,26 +263,40 @@ const getResults = async (req, res, next) => {
 
     /*
      * Search supports subject directly at Result level.
-     * Student/exam searches are handled through aggregation below.
+     * Student/exam searches are handled through matching IDs below.
      */
     let resultsQuery = Result.find(query);
 
     if (search && String(search).trim()) {
-      const cleanSearch = escapeRegex(String(search).trim());
+      const cleanSearch = escapeRegex(
+        String(search).trim()
+      );
 
       const matchingStudents = await Student.find({
         $or: [
-          { name: new RegExp(cleanSearch, 'i') },
-          { admissionNo: new RegExp(cleanSearch, 'i') },
-          { rollNo: new RegExp(cleanSearch, 'i') }
+          {
+            name: new RegExp(cleanSearch, 'i')
+          },
+          {
+            admissionNo: new RegExp(cleanSearch, 'i')
+          },
+          {
+            rollNo: new RegExp(cleanSearch, 'i')
+          }
         ]
       }).select('_id');
 
       const matchingExams = await Exam.find({
         $or: [
-          { name: new RegExp(cleanSearch, 'i') },
-          { examType: new RegExp(cleanSearch, 'i') },
-          { academicYear: new RegExp(cleanSearch, 'i') }
+          {
+            name: new RegExp(cleanSearch, 'i')
+          },
+          {
+            examType: new RegExp(cleanSearch, 'i')
+          },
+          {
+            academicYear: new RegExp(cleanSearch, 'i')
+          }
         ]
       }).select('_id');
 
@@ -283,7 +309,9 @@ const getResults = async (req, res, next) => {
       if (matchingStudents.length > 0) {
         searchConditions.push({
           student: {
-            $in: matchingStudents.map((student) => student._id)
+            $in: matchingStudents.map(
+              (student) => student._id
+            )
           }
         });
       }
@@ -291,21 +319,31 @@ const getResults = async (req, res, next) => {
       if (matchingExams.length > 0) {
         searchConditions.push({
           exam: {
-            $in: matchingExams.map((exam) => exam._id)
+            $in: matchingExams.map(
+              (exam) => exam._id
+            )
           }
         });
       }
 
-      const existingConditions = Object.keys(query).length > 0
-        ? { ...query, $or: searchConditions }
-        : { $or: searchConditions };
+      const existingConditions =
+        Object.keys(query).length > 0
+          ? {
+              ...query,
+              $or: searchConditions
+            }
+          : {
+              $or: searchConditions
+            };
 
       resultsQuery = Result.find(existingConditions);
     }
 
     const finalQuery = resultsQuery.getFilter();
 
-    const total = await Result.countDocuments(finalQuery);
+    const total = await Result.countDocuments(
+      finalQuery
+    );
 
     const results = await resultsQuery
       .populate(
@@ -356,6 +394,7 @@ const getResults = async (req, res, next) => {
 const getResultsByStudent = async (req, res, next) => {
   try {
     const { studentId } = req.params;
+
     const {
       examId,
       subject,
@@ -380,7 +419,9 @@ const getResultsByStudent = async (req, res, next) => {
       );
     }
 
-    const student = await Student.findById(studentId).select(
+    const student = await Student.findById(
+      studentId
+    ).select(
       'name admissionNo rollNo className section'
     );
 
@@ -394,10 +435,11 @@ const getResultsByStudent = async (req, res, next) => {
 
     // If a specific exam is requested, preserve performance service
     if (examId) {
-      const performance = await getStudentExamPerformance(
-        studentId,
-        examId
-      );
+      const performance =
+        await getStudentExamPerformance(
+          studentId,
+          examId
+        );
 
       return ApiResponse.success(
         res,
@@ -407,7 +449,8 @@ const getResultsByStudent = async (req, res, next) => {
       );
     }
 
-    const { page, limit, skip } = parsePagination(req.query);
+    const { page, limit, skip } =
+      parsePagination(req.query);
 
     const query = {
       student: studentId
@@ -425,31 +468,33 @@ const getResultsByStudent = async (req, res, next) => {
     }
 
     if (search) {
-      const cleanSearch = String(search).trim();
+      const cleanSearch =
+        String(search).trim();
 
       if (cleanSearch) {
-        const matchingExams = await Exam.find({
-          $or: [
-            {
-              name: new RegExp(
-                escapeRegex(cleanSearch),
-                'i'
-              )
-            },
-            {
-              examType: new RegExp(
-                escapeRegex(cleanSearch),
-                'i'
-              )
-            },
-            {
-              academicYear: new RegExp(
-                escapeRegex(cleanSearch),
-                'i'
-              )
-            }
-          ]
-        }).select('_id');
+        const matchingExams =
+          await Exam.find({
+            $or: [
+              {
+                name: new RegExp(
+                  escapeRegex(cleanSearch),
+                  'i'
+                )
+              },
+              {
+                examType: new RegExp(
+                  escapeRegex(cleanSearch),
+                  'i'
+                )
+              },
+              {
+                academicYear: new RegExp(
+                  escapeRegex(cleanSearch),
+                  'i'
+                )
+              }
+            ]
+          }).select('_id');
 
         const searchConditions = [
           {
@@ -463,7 +508,9 @@ const getResultsByStudent = async (req, res, next) => {
         if (matchingExams.length > 0) {
           searchConditions.push({
             exam: {
-              $in: matchingExams.map((exam) => exam._id)
+              $in: matchingExams.map(
+                (exam) => exam._id
+              )
             }
           });
         }
@@ -472,7 +519,8 @@ const getResultsByStudent = async (req, res, next) => {
       }
     }
 
-    const total = await Result.countDocuments(query);
+    const total =
+      await Result.countDocuments(query);
 
     const results = await Result.find(query)
       .populate(
@@ -488,7 +536,8 @@ const getResultsByStudent = async (req, res, next) => {
       .limit(limit)
       .lean();
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages =
+      Math.ceil(total / limit);
 
     return ApiResponse.success(
       res,
@@ -597,7 +646,8 @@ const updateResult = async (req, res, next) => {
     } = req.body;
 
     if (subject !== undefined) {
-      const cleanSubject = String(subject).trim();
+      const cleanSubject =
+        String(subject).trim();
 
       if (!cleanSubject) {
         return ApiResponse.error(
@@ -613,7 +663,10 @@ const updateResult = async (req, res, next) => {
     if (totalMarks !== undefined) {
       const numTotal = Number(totalMarks);
 
-      if (!Number.isFinite(numTotal) || numTotal <= 0) {
+      if (
+        !Number.isFinite(numTotal) ||
+        numTotal <= 0
+      ) {
         return ApiResponse.error(
           res,
           400,
@@ -625,7 +678,8 @@ const updateResult = async (req, res, next) => {
     }
 
     if (obtainedMarks !== undefined) {
-      const numObtained = Number(obtainedMarks);
+      const numObtained =
+        Number(obtainedMarks);
 
       if (!Number.isFinite(numObtained)) {
         return ApiResponse.error(
@@ -650,12 +704,15 @@ const updateResult = async (req, res, next) => {
     }
 
     if (remarks !== undefined) {
-      result.remarks = String(remarks).trim();
+      result.remarks =
+        String(remarks).trim();
     }
 
     // Prevent duplicate student + exam + subject combination
     const duplicate = await Result.findOne({
-      _id: { $ne: result._id },
+      _id: {
+        $ne: result._id
+      },
       student: result.student,
       exam: result.exam,
       subject: result.subject
@@ -754,13 +811,20 @@ const deleteResult = async (req, res, next) => {
 };
 
 /**
- * @desc    Send student performance report to parent via Email & WhatsApp
+ * @desc    Send student performance report to parent via Email
  * @route   POST /api/results/send-report
  * @access  Private (Admin, Teacher)
  */
-const sendPerformanceReport = async (req, res, next) => {
+const sendPerformanceReport = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const { studentId, examId } = req.body;
+    const {
+      studentId,
+      examId
+    } = req.body;
 
     if (!studentId || !examId) {
       return ApiResponse.error(
@@ -794,8 +858,10 @@ const sendPerformanceReport = async (req, res, next) => {
       entityId: studentId,
       details: {
         examId,
-        studentName: reportResult.student.name,
-        percentage: reportResult.summary.percentage
+        studentName:
+          reportResult.student.name,
+        percentage:
+          reportResult.summary.percentage
       },
       ip: req.ip
     });
@@ -820,3 +886,4 @@ module.exports = {
   deleteResult,
   sendPerformanceReport
 };
+

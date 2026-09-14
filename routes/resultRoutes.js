@@ -1,20 +1,27 @@
-/**
- * Result Routes
- */
-
 const express = require('express');
 const router = express.Router();
 const resultController = require('../controllers/resultController');
 const { protect } = require('../middleware/authMiddleware');
-const { requireAdminOrTeacher, requireAdmin } = require('../middleware/roleMiddleware');
+const {
+  requireAdminOrTeacher,
+  requireAdmin
+} = require('../middleware/roleMiddleware');
 
 router.use(protect);
 
-// Send performance report email/WhatsApp to parent
-router.post('/send-report', requireAdminOrTeacher, resultController.sendPerformanceReport);
+// Send performance report email to parent
+router.post(
+  '/send-report',
+  requireAdminOrTeacher,
+  resultController.sendPerformanceReport
+);
 
 // Student results breakdown
-router.get('/student/:studentId', requireAdminOrTeacher, resultController.getResultsByStudent);
+router.get(
+  '/student/:studentId',
+  requireAdminOrTeacher,
+  resultController.getResultsByStudent
+);
 
 router
   .route('/')

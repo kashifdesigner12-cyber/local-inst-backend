@@ -1,8 +1,3 @@
-/**
- * Settings Controller
- * Handles school/system settings
- */
-
 const Settings = require('../models/Settings');
 const ApiResponse = require('../utils/apiResponse');
 
@@ -28,14 +23,16 @@ const getSettings = async (req, res, next) => {
         academicYear: '',
         currency: 'PKR',
         timezone: 'Asia/Karachi',
+
         attendanceSettings: {
           lateAfterMinutes: 15,
           absentNotificationEnabled: true
         },
+
         notificationSettings: {
-          emailEnabled: true,
-          whatsappEnabled: false
+          emailEnabled: true
         },
+
         updatedBy: req.user?._id || null
       });
     }
@@ -111,10 +108,7 @@ const createSettings = async (req, res, next) => {
 
       notificationSettings: {
         emailEnabled:
-          notificationSettings?.emailEnabled ?? true,
-
-        whatsappEnabled:
-          notificationSettings?.whatsappEnabled ?? false
+          notificationSettings?.emailEnabled ?? true
       },
 
       updatedBy: req.user?._id || null
@@ -228,11 +222,6 @@ const updateSettings = async (req, res, next) => {
         settings.notificationSettings.emailEnabled =
           notificationSettings.emailEnabled;
       }
-
-      if (notificationSettings.whatsappEnabled !== undefined) {
-        settings.notificationSettings.whatsappEnabled =
-          notificationSettings.whatsappEnabled;
-      }
     }
 
     if (isActive !== undefined) {
@@ -289,8 +278,7 @@ const resetSettings = async (req, res, next) => {
     };
 
     settings.notificationSettings = {
-      emailEnabled: true,
-      whatsappEnabled: false
+      emailEnabled: true
     };
 
     settings.isActive = true;
@@ -317,3 +305,4 @@ module.exports = {
   updateSettings,
   resetSettings
 };
+

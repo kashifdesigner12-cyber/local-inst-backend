@@ -1,10 +1,4 @@
-/**
- * Staff Model (Teachers & Administrative/Support Staff)
- */
-
 const mongoose = require('mongoose');
-
-const { normalizePhoneNumber } = require('../utils/phoneUtils');
 
 const staffSchema = new mongoose.Schema(
   {
@@ -112,22 +106,6 @@ const staffSchema = new mongoose.Schema(
   }
 );
 
-// Normalize phone number before saving
-staffSchema.pre('save', async function () {
-  if (this.phone) {
-    this.phone = normalizePhoneNumber(this.phone);
-  }
-});
-
-// Normalize phone number when updating
-staffSchema.pre('findOneAndUpdate', async function () {
-  const update = this.getUpdate();
-
-  if (update && update.phone) {
-    update.phone = normalizePhoneNumber(update.phone);
-  }
-});
-
 // Indexes
 // email already has unique: true, so no duplicate unique index here
 staffSchema.index({ status: 1 });
@@ -138,3 +116,4 @@ staffSchema.index({ employeeId: 1 });
 const Staff = mongoose.model('Staff', staffSchema);
 
 module.exports = Staff;
+

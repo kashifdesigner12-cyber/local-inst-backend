@@ -1,17 +1,12 @@
-/**
- * Attendance Controller
- * Handles Student Attendance Marking, Bulk Marking, History, Delete,
- * Pagination, Sorting, Search, Filters, and WhatsApp Trigger on ABSENT
- */
-
 const Attendance = require('../models/Attendance');
 const Student = require('../models/Student');
 const ApiResponse = require('../utils/apiResponse');
+
 const {
   isValidObjectId,
   sanitizeDateOnly
 } = require('../utils/validators');
-const notificationService = require('../services/notificationService');
+
 const { logAction } = require('../services/auditService');
 
 /**
@@ -193,23 +188,6 @@ const markAttendance = async (req, res, next) => {
       });
     }
 
-    // WhatsApp notification for ABSENT
-    if (statusUpper === 'ABSENT') {
-      notificationService
-        .notifyAttendanceAbsent(
-          student,
-          attendanceDate,
-          student.className,
-          student.section
-        )
-        .catch((err) =>
-          console.error(
-            '[WhatsApp Trigger Background Error]',
-            err.message
-          )
-        );
-    }
-
     await logAction({
       user: req.user._id,
       action: 'ATTENDANCE_MARKED',
@@ -228,9 +206,7 @@ const markAttendance = async (req, res, next) => {
       201,
       'Attendance marked successfully',
       {
-        attendance,
-        whatsappNotificationSent:
-          statusUpper === 'ABSENT'
+        attendance
       }
     );
   } catch (error) {
@@ -271,7 +247,6 @@ const markBulkAttendance = async (req, res, next) => {
     }
 
     const results = [];
-    const absentStudentsToNotify = [];
 
     const studentIds = attendanceList
       .map((item) => item.studentId)
@@ -362,33 +337,6 @@ const markBulkAttendance = async (req, res, next) => {
         success: true,
         attendanceId: attendanceRecord._id
       });
-
-      if (statusUpper === 'ABSENT') {
-        absentStudentsToNotify.push({
-          student,
-          className: student.className,
-          section: student.section
-        });
-      }
-    }
-
-    // WhatsApp notifications
-    if (absentStudentsToNotify.length > 0) {
-      Promise.all(
-        absentStudentsToNotify.map((item) =>
-          notificationService.notifyAttendanceAbsent(
-            item.student,
-            attendanceDate,
-            item.className,
-            item.section
-          )
-        )
-      ).catch((waErr) =>
-        console.error(
-          '[Bulk WhatsApp Background Error]',
-          waErr.message
-        )
-      );
     }
 
     await logAction({
@@ -398,8 +346,11 @@ const markBulkAttendance = async (req, res, next) => {
       details: {
         date: attendanceDate,
         totalSubmitted: attendanceList.length,
-        totalAbsent:
-          absentStudentsToNotify.length
+        totalAbsent: results.filter(
+          (item) =>
+            item.success &&
+            item.status === 'ABSENT'
+        ).length
       },
       ip: req.ip
     });
@@ -411,8 +362,11 @@ const markBulkAttendance = async (req, res, next) => {
       {
         date: attendanceDate,
         totalProcessed: results.length,
-        absentCount:
-          absentStudentsToNotify.length,
+        absentCount: results.filter(
+          (item) =>
+            item.success &&
+            item.status === 'ABSENT'
+        ).length,
         records: results
       }
     );
@@ -552,7 +506,7 @@ const getAttendance = async (req, res, next) => {
     /**
      * Search
      *
-     * Searches populated student fields through
+     * Searches student fields through
      * Student collection first, then filters attendance.
      */
     if (search && search.trim()) {
@@ -566,8 +520,7 @@ const getAttendance = async (req, res, next) => {
           { name: searchRegex },
           { admissionNo: searchRegex },
           { parentName: searchRegex },
-          { parentPhone: searchRegex },
-          { parentWhatsApp: searchRegex }
+          { parentPhone: searchRegex }
         ]
       }).select('_id');
 
@@ -610,7 +563,7 @@ const getAttendance = async (req, res, next) => {
         Attendance.find(query)
           .populate(
             'student',
-            'name admissionNo rollNo className section parentName parentPhone parentWhatsApp photo'
+            'name admissionNo rollNo className section parentName parentPhone photo'
           )
           .populate(
             'markedBy',
@@ -671,7 +624,7 @@ const getAttendanceById = async (
       await Attendance.findById(id)
         .populate(
           'student',
-          'name admissionNo rollNo className section parentWhatsApp'
+          'name admissionNo rollNo className section'
         )
         .populate(
           'markedBy',
@@ -710,6 +663,7 @@ const updateAttendance = async (
 ) => {
   try {
     const { id } = req.params;
+
     const {
       status,
       remarks
@@ -777,26 +731,6 @@ const updateAttendance = async (
     record.markedBy = req.user._id;
 
     await record.save();
-
-    // WhatsApp notification when changed to ABSENT
-    if (
-      record.status === 'ABSENT' &&
-      oldStatus !== 'ABSENT'
-    ) {
-      notificationService
-        .notifyAttendanceAbsent(
-          record.student,
-          record.date,
-          record.className,
-          record.section
-        )
-        .catch((err) =>
-          console.error(
-            '[WhatsApp Update Trigger Error]',
-            err.message
-          )
-        );
-    }
 
     await logAction({
       user: req.user._id,
@@ -948,7 +882,7 @@ const getAttendanceByDate = async (
         Attendance.find(query)
           .populate(
             'student',
-            'name admissionNo rollNo className section parentWhatsApp'
+            'name admissionNo rollNo className section'
           )
           .populate(
             'markedBy',
@@ -971,15 +905,19 @@ const getAttendanceByDate = async (
 
     const summary = {
       total,
+
       present: summaryRecords.filter(
         (r) => r.status === 'PRESENT'
       ).length,
+
       absent: summaryRecords.filter(
         (r) => r.status === 'ABSENT'
       ).length,
+
       late: summaryRecords.filter(
         (r) => r.status === 'LATE'
       ).length,
+
       leave: summaryRecords.filter(
         (r) => r.status === 'LEAVE'
       ).length
@@ -1193,6 +1131,7 @@ const getAttendanceByStudent = async (
       'Student attendance statistics retrieved',
       {
         student,
+
         stats: {
           totalDays,
           presentCount,
@@ -1201,6 +1140,7 @@ const getAttendanceByStudent = async (
           leaveCount,
           attendancePercentage
         },
+
         history: records
       },
       {

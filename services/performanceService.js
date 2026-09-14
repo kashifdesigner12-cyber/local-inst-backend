@@ -1,11 +1,12 @@
-/**
- * Performance and Academic Calculation Service
- */
-
 const Result = require('../models/Result');
 const Student = require('../models/Student');
 const Exam = require('../models/Exam');
-const { calculateGrade, getGradeRemarks } = require('../utils/gradeCalculator');
+
+const {
+  calculateGrade,
+  getGradeRemarks
+} = require('../utils/gradeCalculator');
+
 const notificationService = require('./notificationService');
 
 /**
@@ -13,16 +14,23 @@ const notificationService = require('./notificationService');
  * @param {string} studentId
  * @param {string} examId
  */
-const getStudentExamPerformance = async (studentId, examId) => {
+const getStudentExamPerformance = async (
+  studentId,
+  examId
+) => {
   const [student, exam, results] = await Promise.all([
     Student.findById(studentId),
     Exam.findById(examId),
-    Result.find({ student: studentId, exam: examId })
+    Result.find({
+      student: studentId,
+      exam: examId
+    })
   ]);
 
   if (!student) {
     throw new Error('Student not found');
   }
+
   if (!exam) {
     throw new Error('Exam not found');
   }
@@ -42,9 +50,23 @@ const getStudentExamPerformance = async (studentId, examId) => {
     };
   }
 
-  const totalMaxMarks = results.reduce((sum, r) => sum + r.totalMarks, 0);
-  const totalObtained = results.reduce((sum, r) => sum + r.obtainedMarks, 0);
-  const percentage = totalMaxMarks > 0 ? Math.round(((totalObtained / totalMaxMarks) * 100) * 100) / 100 : 0;
+  const totalMaxMarks = results.reduce(
+    (sum, result) => sum + result.totalMarks,
+    0
+  );
+
+  const totalObtained = results.reduce(
+    (sum, result) => sum + result.obtainedMarks,
+    0
+  );
+
+  const percentage =
+    totalMaxMarks > 0
+      ? Math.round(
+          ((totalObtained / totalMaxMarks) * 100) * 100
+        ) / 100
+      : 0;
+
   const grade = calculateGrade(percentage);
   const remarks = getGradeRemarks(grade);
 
@@ -64,16 +86,28 @@ const getStudentExamPerformance = async (studentId, examId) => {
 };
 
 /**
- * Dispatch performance report to student's parent via Email (and WhatsApp)
+ * Dispatch performance report to student's parent via Email
  */
-const sendPerformanceReportToParent = async (studentId, examId) => {
-  const performanceData = await getStudentExamPerformance(studentId, examId);
+const sendPerformanceReportToParent = async (
+  studentId,
+  examId
+) => {
+  const performanceData =
+    await getStudentExamPerformance(
+      studentId,
+      examId
+    );
 
   if (performanceData.results.length === 0) {
-    throw new Error('Cannot send report: No exam subject results recorded for this student.');
+    throw new Error(
+      'Cannot send report: No exam subject results recorded for this student.'
+    );
   }
 
-  const notificationResult = await notificationService.notifyPerformanceReport(performanceData);
+  const notificationResult =
+    await notificationService.notifyPerformanceReport(
+      performanceData
+    );
 
   return {
     student: performanceData.student,
@@ -87,3 +121,4 @@ module.exports = {
   getStudentExamPerformance,
   sendPerformanceReportToParent
 };
+

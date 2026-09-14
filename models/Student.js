@@ -1,9 +1,4 @@
-/**
- * Student Model
- */
-
 const mongoose = require('mongoose');
-const { normalizePhoneNumber } = require('../utils/phoneUtils');
 
 const studentSchema = new mongoose.Schema(
   {
@@ -66,13 +61,6 @@ const studentSchema = new mongoose.Schema(
 
     /**
      * Student Documents
-     *
-     * Each document stores:
-     * - document type
-     * - original/display name
-     * - uploaded file path
-     * - file type
-     * - upload date
      */
     documents: [
       {
@@ -118,15 +106,6 @@ const studentSchema = new mongoose.Schema(
       default: ''
     },
 
-    parentWhatsApp: {
-      type: String,
-      required: [
-        true,
-        'Parent WhatsApp number is required for attendance notifications'
-      ],
-      trim: true
-    },
-
     parentEmail: {
       type: String,
       trim: true,
@@ -161,23 +140,9 @@ const studentSchema = new mongoose.Schema(
 );
 
 /**
- * Normalize phone and WhatsApp numbers before saving.
- */
-studentSchema.pre('save', function () {
-  if (this.parentWhatsApp) {
-    this.parentWhatsApp = normalizePhoneNumber(this.parentWhatsApp);
-  }
-
-  if (this.parentPhone) {
-    this.parentPhone = normalizePhoneNumber(this.parentPhone);
-  }
-});
-
-/**
  * Indexes for fast lookup and reporting
  */
 studentSchema.index({ className: 1, section: 1 });
-studentSchema.index({ parentWhatsApp: 1 });
 studentSchema.index({ status: 1 });
 studentSchema.index({
   name: 'text',
@@ -188,3 +153,4 @@ studentSchema.index({
 const Student = mongoose.model('Student', studentSchema);
 
 module.exports = Student;
+

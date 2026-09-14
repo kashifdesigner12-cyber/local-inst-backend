@@ -1,7 +1,3 @@
-/**
- * Fee Management Controller
- */
-
 const Fee = require('../models/Fee');
 const Student = require('../models/Student');
 const ApiResponse = require('../utils/apiResponse');
@@ -22,7 +18,10 @@ const generateReceiptNumber = () => {
  * Escape special regex characters
  */
 const escapeRegex = (value) => {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return String(value).replace(
+    /[.*+?^${}()|[\]\\]/g,
+    '\\$&'
+  );
 };
 
 /**
@@ -464,7 +463,7 @@ const getFees = async (req, res, next) => {
       Fee.find(query)
         .populate(
           'student',
-          'name admissionNo rollNo className section parentName parentPhone parentWhatsApp'
+          'name admissionNo rollNo className section parentName parentPhone'
         )
         .populate(
           'receivedBy',
@@ -528,7 +527,7 @@ const getFeeById = async (
       await Fee.findById(id)
         .populate(
           'student',
-          'name admissionNo rollNo className section parentName parentPhone parentWhatsApp'
+          'name admissionNo rollNo className section parentName parentPhone'
         )
         .populate(
           'receivedBy',
@@ -1220,18 +1219,23 @@ const getFeeSummary = async (
         {
           $group: {
             _id: null,
+
             totalBilled: {
               $sum: '$amount'
             },
+
             totalDiscount: {
               $sum: '$discount'
             },
+
             totalCollected: {
               $sum: '$paidAmount'
             },
+
             totalPending: {
               $sum: '$remainingAmount'
             },
+
             totalTransactions: {
               $sum: 1
             }
@@ -1247,12 +1251,15 @@ const getFeeSummary = async (
         {
           $group: {
             _id: '$status',
+
             count: {
               $sum: 1
             },
+
             totalPaid: {
               $sum: '$paidAmount'
             },
+
             totalRemaining: {
               $sum: '$remainingAmount'
             }
@@ -1297,3 +1304,4 @@ module.exports = {
   getFeesByStudent,
   getFeeSummary
 };
+

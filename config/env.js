@@ -1,8 +1,3 @@
-/**
- * Environment Variables Configuration Module
- * Loads and standardizes environment configurations
- */
-
 const dotenv = require('dotenv');
 const path = require('path');
 
@@ -76,37 +71,6 @@ const config = {
   },
 
   // =========================================================
-  // WHATSAPP CLOUD API
-  // =========================================================
-  whatsapp: {
-    accessToken:
-      process.env.WHATSAPP_ACCESS_TOKEN || '',
-
-    phoneNumberId:
-      process.env.WHATSAPP_PHONE_NUMBER_ID || '',
-
-    businessAccountId:
-      process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || '',
-
-    apiVersion:
-      process.env.WHATSAPP_API_VERSION || 'v25.0',
-
-    templates: {
-      absent:
-        process.env.WHATSAPP_TEMPLATE_ABSENT ||
-        'attendance_absent',
-
-      present:
-        process.env.WHATSAPP_TEMPLATE_PRESENT ||
-        'attendance_present',
-
-      performance:
-        process.env.WHATSAPP_TEMPLATE_PERFORMANCE ||
-        'performance_report'
-    }
-  },
-
-  // =========================================================
   // ADMIN SEED
   // =========================================================
   seedAdmin: {
@@ -129,3 +93,4 @@ const config = {
 };
 
 module.exports = config;
+

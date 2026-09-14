@@ -377,10 +377,7 @@ const startServer = async () => {
 // Start only when this file is executed directly
 // --------------------------------------------------
 
-if (require.main === module) {
-  startServer();
-}
-
+startServer();
 // --------------------------------------------------
 // Graceful Shutdown
 // --------------------------------------------------

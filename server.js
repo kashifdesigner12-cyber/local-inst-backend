@@ -54,7 +54,7 @@ app.use(
 
 const allowedOrigins = [
   config.frontendUrl,
-  'https://localproinstitute.localpro1.net',
+  'https://institute.localpro1.net',
   'http://localhost:3000',
   'http://localhost:5173'
 ].filter(Boolean);

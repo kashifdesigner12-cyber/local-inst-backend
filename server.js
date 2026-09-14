@@ -31,6 +31,7 @@ const app = express();
 
 // --------------------------------------------------
 // Trust Proxy
+// Hostinger / reverse proxy
 // --------------------------------------------------
 
 if (config.env === 'production') {
@@ -247,14 +248,12 @@ app.use(
 
 // --------------------------------------------------
 // 404 Handler
-// IMPORTANT: Must be after all routes
 // --------------------------------------------------
 
 app.use(notFound);
 
 // --------------------------------------------------
 // Global Error Handler
-// IMPORTANT: Must be LAST
 // --------------------------------------------------
 
 app.use(errorHandler);
@@ -289,11 +288,31 @@ const startServer = async () => {
       `🌍 Frontend    : ${config.frontendUrl}`
     );
     console.log(
+      `🗄️ MongoDB URI : ${
+        config.mongo.uri ? 'CONFIGURED' : 'MISSING'
+      }`
+    );
+    console.log(
       '====================================================='
     );
 
     // ------------------------------------------------
-    // Start HTTP server FIRST
+    // Connect MongoDB FIRST
+    // ------------------------------------------------
+
+    console.log('');
+    console.log(
+      '🔄 Connecting to MongoDB...'
+    );
+
+    await connectDB();
+
+    console.log(
+      '✅ MongoDB connection established'
+    );
+
+    // ------------------------------------------------
+    // Start HTTP server ONLY after DB connection
     // ------------------------------------------------
 
     server = app.listen(
@@ -329,37 +348,28 @@ const startServer = async () => {
       }
     );
 
-    // ------------------------------------------------
-    // Connect MongoDB
-    // ------------------------------------------------
-
-    try {
-      await connectDB();
-
-      console.log(
-        '✅ MongoDB connection established'
-      );
-    } catch (dbError) {
-      console.error(
-        '❌ MongoDB connection failed:'
-      );
-
-      console.error(
-        dbError.message || dbError
-      );
-
-      console.error(
-        '⚠️ Server is still running. Database-dependent API requests may fail.'
-      );
-    }
   } catch (error) {
+    console.error('');
     console.error(
-      '❌ Failed to start server:'
+      '====================================================='
+    );
+    console.error(
+      '❌ FATAL: MongoDB connection failed'
+    );
+    console.error(
+      '====================================================='
     );
 
     console.error(
-      error.stack || error
+      error.message || error
     );
+
+    console.error('');
+    console.error(
+      '⚠️ Server will NOT start until MongoDB is connected.'
+    );
+
+    console.error('');
 
     process.exit(1);
   }

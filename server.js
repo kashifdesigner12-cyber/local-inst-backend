@@ -1,8 +1,3 @@
-/**
- * School Management System
- * Production-ready Express Server
- */
-
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -17,7 +12,6 @@ const connectDB = require('./config/db');
 // Routes
 // --------------------------------------------------
 
-const whatsappRoutes = require('./routes/whatsappRoutes');
 const apiRoutes = require('./routes');
 
 // --------------------------------------------------
@@ -69,7 +63,7 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests without Origin:
+      // Allow requests without Origin
       // Postman, curl, server-to-server etc.
       if (!origin) {
         return callback(null, true);
@@ -153,11 +147,8 @@ app.use(
 
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-
   max: 1000,
-
   standardHeaders: true,
-
   legacyHeaders: false,
 
   message: {
@@ -175,11 +166,8 @@ app.use('/api', generalLimiter);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-
   max: 50,
-
   standardHeaders: true,
-
   legacyHeaders: false,
 
   message: {
@@ -212,8 +200,7 @@ app.use(
 app.get('/', (req, res) => {
   return res.status(200).json({
     success: true,
-    message:
-      'School Management System API is live.',
+    message: 'School Management System API is live.',
     environment: config.env,
     version: '1.0.0',
 
@@ -225,17 +212,13 @@ app.get('/', (req, res) => {
       fees: '/api/fees',
       transactions: '/api/transactions',
       staff: '/api/staff',
-      staffAttendance:
-        '/api/staff-attendance',
+      staffAttendance: '/api/staff-attendance',
       leaves: '/api/leaves',
       exams: '/api/exams',
       results: '/api/results',
       dashboard: '/api/dashboard',
       reports: '/api/reports',
-      notifications:
-        '/api/notifications',
-      whatsapp:
-        '/api/whatsapp'
+      notifications: '/api/notifications'
     }
   });
 });
@@ -252,15 +235,6 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
-// --------------------------------------------------
-// WhatsApp Routes
-// --------------------------------------------------
-
-app.use(
-  '/api/whatsapp',
-  whatsappRoutes
-);
 
 // --------------------------------------------------
 // Main API Routes
@@ -320,7 +294,6 @@ const startServer = async () => {
 
     // ------------------------------------------------
     // Start HTTP server FIRST
-    // This is important for hosting platforms.
     // ------------------------------------------------
 
     server = app.listen(
@@ -358,8 +331,6 @@ const startServer = async () => {
 
     // ------------------------------------------------
     // Connect MongoDB
-    // Server remains available even if DB connection
-    // temporarily fails.
     // ------------------------------------------------
 
     try {
@@ -469,7 +440,6 @@ process.on(
 
     console.error(error);
 
-    // Give the server a moment to log before exit
     setTimeout(() => {
       process.exit(1);
     }, 1000);

@@ -34,9 +34,7 @@ const app = express();
 // Hostinger / reverse proxy
 // --------------------------------------------------
 
-if (config.env === 'production') {
-  app.set('trust proxy', 1);
-}
+app.set('trust proxy', 1);
 
 // --------------------------------------------------
 // Security - Helmet

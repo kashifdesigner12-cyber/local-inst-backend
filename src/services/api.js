@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://apilocalpro1.localpro1.net/api";
+const API_BASE_URL = "https://apinstitute.localpro1.net/api";
 
 export const apiCall = async (
   endpoint,

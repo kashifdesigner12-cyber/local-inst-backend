@@ -81,7 +81,7 @@ function Dashboard() {
       console.log("=================================");
 
       console.log(
-        "GET https://apilocalpro1.localpro1.net/api/dashboard"
+        "GET https://apinstitute.localpro1.net/api/dashboard"
       );
 
       console.log("Dashboard request started...");

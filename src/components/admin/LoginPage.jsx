@@ -9,7 +9,7 @@ function LoginPage({ onLoginSuccess }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "https://apilocalpro1.localpro1.net/api";
+  const API_URL = "https://apinstitute.localpro1.net/api";
 
   const neumorphicCard =
     "bg-[#e0e5ec] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] rounded-3xl p-8 border border-white/50";

@@ -1,8 +1,6 @@
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://apinstitute.localpro1.net/api";
-
+  import.meta.env.VITE_API_URL || "https://apinstitue.localpro1.net/api";
 export const apiCall = async (
   endpoint,
   method = "GET",

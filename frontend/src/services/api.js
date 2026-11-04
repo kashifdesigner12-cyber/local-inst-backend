@@ -1,11 +1,13 @@
-export const API_BASE_URL = "https://api.localpro1.net/api";
+
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://apinstitute.localpro1.net/api";
 
 export const apiCall = async (
   endpoint,
   method = "GET",
   data = null
 ) => {
-  // Login token
   const token =
     localStorage.getItem("teacherToken") ||
     localStorage.getItem("adminToken");
@@ -14,7 +16,6 @@ export const apiCall = async (
     Accept: "application/json",
   };
 
-  // Token available ho to Authorization header
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
@@ -24,17 +25,6 @@ export const apiCall = async (
     headers,
   };
 
-  /*
-   * IMPORTANT:
-   *
-   * Agar data FormData hai (for example student photo upload),
-   * Content-Type manually SET NAHI karna.
-   *
-   * Browser khud:
-   * multipart/form-data; boundary=...
-   *
-   * set karega.
-   */
   if (data instanceof FormData) {
     config.body = data;
   } else if (data !== null && data !== undefined) {
@@ -43,9 +33,7 @@ export const apiCall = async (
   }
 
   try {
-    console.log(
-      `${method} ${API_BASE_URL}${endpoint}`
-    );
+    console.log(`${method} ${API_BASE_URL}${endpoint}`);
 
     const response = await fetch(
       `${API_BASE_URL}${endpoint}`,
@@ -62,12 +50,6 @@ export const apiCall = async (
         message: "Server returned an invalid response.",
       };
     }
-
-    console.log(
-      "API response:",
-      response.status,
-      result
-    );
 
     if (!response.ok) {
       return {
@@ -86,19 +68,13 @@ export const apiCall = async (
       data: result,
     };
   } catch (error) {
-    console.error(
-      "API connection error:",
-      error
-    );
+    console.error("API connection error:", error);
 
     return {
       success: false,
       status: 0,
-      message:
-        "",
+      message: "Unable to connect to server.",
       error,
     };
   }
 };
-
-export { API_BASE_URL };

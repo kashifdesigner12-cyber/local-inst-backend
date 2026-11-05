@@ -2,24 +2,58 @@ const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema(
   {
-    name: {
+    firstName: {
       type: String,
-      required: [true, 'Student name is required'],
+      required: [true, 'First name is required'],
       trim: true
     },
 
+    lastName: {
+      type: String,
+      required: [true, 'Last name is required'],
+      trim: true
+    },
+
+    name: {
+      type: String,
+      trim: true
+    },
+
+    // CNIC / B-Form (Mandatory)
+    cnic: {
+      type: String,
+      required: [true, 'CNIC / B-Form is required'],
+      trim: true
+    },
+
+    // Courses Details / Enrolled Courses (Mandatory: select at least one course)
+    courses: {
+      type: [String],
+      required: [true, 'At least one course is required'],
+      validate: {
+        validator: function (v) {
+          return Array.isArray(v) && v.length > 0;
+        },
+        message: 'Please select at least one course'
+      }
+    },
+
+    // -----------------------------------------------------------------
+    // ALL OTHER FIELDS ARE OPTIONAL / NON-MANDATORY
+    // -----------------------------------------------------------------
+
     admissionNo: {
       type: String,
-      required: [true, 'Admission number is required'],
       unique: true,
+      sparse: true,
       trim: true,
       uppercase: true
     },
 
     className: {
       type: String,
-      required: [true, 'Course/Class name is required'],
-      trim: true
+      trim: true,
+      default: ''
     },
 
     courseDuration: {
@@ -30,9 +64,9 @@ const studentSchema = new mongoose.Schema(
 
     section: {
       type: String,
-      required: [true, 'Section / Timing is required'],
       trim: true,
-      uppercase: true
+      uppercase: true,
+      default: 'MORNING'
     },
 
     rollNo: {
@@ -44,7 +78,7 @@ const studentSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: {
-        values: ['MALE', 'FEMALE', 'OTHER', 'Male', 'Female', 'Other'],
+        values: ['MALE', 'FEMALE', 'OTHER', 'Male', 'Female', 'Other', ''],
         message: '{VALUE} is not valid. Allowed: Male, Female, Other'
       },
       default: 'Male'
@@ -53,17 +87,10 @@ const studentSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: {
-        values: ['ACTIVE', 'INACTIVE', 'Active', 'Inactive'],
+        values: ['ACTIVE', 'INACTIVE', 'Active', 'Inactive', ''],
         message: '{VALUE} is not valid. Allowed: Active, Inactive'
       },
       default: 'Active'
-    },
-
-    // Student CNIC & ID Card Picture (Required on admission)
-    cnic: {
-      type: String,
-      trim: true,
-      default: ''
     },
 
     idCardPhoto: {
@@ -72,15 +99,11 @@ const studentSchema = new mongoose.Schema(
       default: ''
     },
 
-    // Student profile photo
     photo: {
       type: String,
       default: ''
     },
 
-    /**
-     * Student Documents
-     */
     documents: [
       {
         type: {
@@ -115,8 +138,8 @@ const studentSchema = new mongoose.Schema(
 
     parentName: {
       type: String,
-      required: [true, 'Parent/Guardian name is required'],
-      trim: true
+      trim: true,
+      default: ''
     },
 
     parentPhone: {
@@ -163,6 +186,39 @@ const studentSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+/**
+ * Pre-validation Middleware to automatically synchronize
+ * firstName + lastName <-> name, courses <-> className, and admissionNo
+ */
+studentSchema.pre('validate', function () {
+  // Synchronize name
+  if (this.firstName || this.lastName) {
+    this.name = `${this.firstName || ''} ${this.lastName || ''}`.trim();
+  } else if (this.name) {
+    const parts = String(this.name).trim().split(/\s+/);
+    this.firstName = parts[0] || 'Student';
+    this.lastName = parts.slice(1).join(' ') || '.';
+  }
+
+  // Synchronize className from courses if missing
+  if (!this.className && Array.isArray(this.courses) && this.courses.length > 0) {
+    this.className = this.courses.join(', ');
+  }
+
+  // Synchronize courses from className if missing
+  if ((!this.courses || this.courses.length === 0) && this.className) {
+    this.courses = String(this.className)
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+  }
+
+  // Generate admission number if not provided
+  if (!this.admissionNo) {
+    this.admissionNo = `ADM-${Date.now().toString().slice(-6)}`;
+  }
+});
 
 /**
  * Indexes for fast lookup and reporting

@@ -262,17 +262,37 @@ function StudentList() {
       .trim()
       .replace(/\s+/g, " ");
 
-    if (!fullName) {
+    if (!formData.firstName.trim()) {
+      setErrorMsg("Please enter first name.");
+      return;
+    }
+
+    if (!formData.lastName.trim()) {
+      setErrorMsg("Please enter last name.");
+      return;
+    }
+
+    if (!formData.cnic.trim()) {
+      setErrorMsg("Please enter CNIC / B-Form.");
+      return;
+    }
+
+    if (selectedCourses.length === 0) {
+      setErrorMsg("Please select at least one course.");
+      return;
+    }
+
+    if (false && !fullName) {
       setErrorMsg("Please enter student name.");
       return;
     }
 
-    if (!formData.admissionNo.trim()) {
+    if (false && !formData.admissionNo.trim()) {
       setErrorMsg("Please enter admission number.");
       return;
     }
 
-    if (!idCardFile) {
+    if (false && !idCardFile) {
       setErrorMsg("ID Card / CNIC Copy upload is strictly REQUIRED.");
       return;
     }
@@ -282,17 +302,17 @@ function StudentList() {
       return;
     }
 
-    if (!formData.section.trim()) {
+    if (false && !formData.section.trim()) {
       setErrorMsg("Please enter section.");
       return;
     }
 
-    if (!formData.fatherName.trim()) {
+    if (false && !formData.fatherName.trim()) {
       setErrorMsg("Please enter father/guardian name.");
       return;
     }
 
-    if (!formData.parentPhone.trim()) {
+    if (false && !formData.parentPhone.trim()) {
       setErrorMsg("Please enter parent phone / WhatsApp.");
       return;
     }
@@ -302,6 +322,10 @@ function StudentList() {
     try {
       const payload = new FormData();
 
+      payload.append("firstName", formData.firstName.trim());
+      payload.append("lastName", formData.lastName.trim());
+      payload.append("cnic", formData.cnic.trim());
+      selectedCourses.forEach((c) => payload.append("courses[]", c));
       payload.append("name", fullName);
       payload.append("admissionNo", formData.admissionNo.trim());
       payload.append("className", selectedCourses.join(", "));
@@ -703,7 +727,7 @@ function StudentList() {
                   </p>
 
                   <p className="text-xs font-bold text-slate-500">
-                    CNIC / B-Form:{" "}
+                    CNIC / B-Form *:{" "}
                     <span className="text-blue-700 font-mono font-bold">
                       {viewingStudent.cnic || "Not Provided"}
                     </span>
@@ -929,7 +953,7 @@ function StudentList() {
 
                   <div className="flex-1">
                     <label className="block text-[10px] font-black text-slate-800 uppercase mb-1">
-                      ID Card / CNIC Copy <span className="text-rose-500">* (Required)</span>
+                      ID Card / CNIC Copy (Optional)
                     </label>
 
                     <input
@@ -972,15 +996,16 @@ function StudentList() {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    required
+
                     className={neumorphicInset}
+                    required
                     placeholder="First name"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Last Name
+                    Last Name *
                   </label>
                   <input
                     type="text"
@@ -988,28 +1013,30 @@ function StudentList() {
                     value={formData.lastName}
                     onChange={handleInputChange}
                     className={neumorphicInset}
+
+                    required
                     placeholder="Last name"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Admission No *
+                    Admission No (Optional)
                   </label>
                   <input
                     type="text"
                     name="admissionNo"
                     value={formData.admissionNo}
                     onChange={handleInputChange}
-                    required
+
                     className={neumorphicInset}
-                    placeholder="ADM-001"
+                    placeholder="ADM-001 (Optional)"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    CNIC / B-Form
+                    CNIC / B-Form *
                   </label>
                   <input
                     type="text"
@@ -1017,6 +1044,8 @@ function StudentList() {
                     value={formData.cnic}
                     onChange={handleInputChange}
                     className={neumorphicInset}
+
+                    required
                     placeholder="37405-XXXXXXX-X"
                   />
                 </div>
@@ -1085,7 +1114,7 @@ function StudentList() {
               {/* COURSE DURATION SELECTION */}
               <div className="p-3 bg-[#e0e5ec] shadow-[inset_2px_2px_4px_rgb(163,177,198,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.8)] rounded-xl">
                 <label className="block text-[10px] font-black uppercase text-slate-700 mb-2">
-                  Course Duration *
+                  Course Duration (Optional)
                 </label>
                 <div className="flex flex-wrap gap-4">
                   {durationOptions.map((dur) => (
@@ -1147,14 +1176,14 @@ function StudentList() {
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Section *
+                    Section (Optional)
                   </label>
                   <input
                     type="text"
                     name="section"
                     value={formData.section}
                     onChange={handleInputChange}
-                    required
+
                     className={neumorphicInset}
                     placeholder="Morning / Evening"
                   />
@@ -1176,14 +1205,14 @@ function StudentList() {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Father Name *
+                    Father / Guardian Name (Optional)
                   </label>
                   <input
                     type="text"
                     name="fatherName"
                     value={formData.fatherName}
                     onChange={handleInputChange}
-                    required
+
                     className={neumorphicInset}
                     placeholder="Father name"
                   />
@@ -1191,14 +1220,14 @@ function StudentList() {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    WhatsApp *
+                    WhatsApp / Phone (Optional)
                   </label>
                   <input
                     type="text"
                     name="parentPhone"
                     value={formData.parentPhone}
                     onChange={handleInputChange}
-                    required
+
                     className={neumorphicInset}
                     placeholder="0300-1234567"
                   />

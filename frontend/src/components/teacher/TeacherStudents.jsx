@@ -11,6 +11,9 @@ function TeacherStudents() {
     .split("T")[0];
 
   const emptyForm = {
+    firstName: "",
+    lastName: "",
+    cnic: "",
     name: "",
     admissionNo: "",
     className: "",
@@ -28,36 +31,16 @@ function TeacherStudents() {
   };
 
   const [students, setStudents] = useState([]);
-
-  const [showModal, setShowModal] =
-    useState(false);
-
-  const [formData, setFormData] =
-    useState(emptyForm);
-
-  const [photoFile, setPhotoFile] =
-    useState(null);
-
-  const [photoPreview, setPhotoPreview] =
-    useState("");
-
-  const [searchTerm, setSearchTerm] =
-    useState("");
-
-  const [classFilter, setClassFilter] =
-    useState("ALL");
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [errorMsg, setErrorMsg] =
-    useState("");
-
-  const [successMsg, setSuccessMsg] =
-    useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState(emptyForm);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [classFilter, setClassFilter] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const neumorphicCard =
     "bg-[#e0e5ec] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] rounded-2xl p-6 border border-white/50";
@@ -75,15 +58,9 @@ function TeacherStudents() {
         "GET"
       );
 
-      console.log(
-        "Teacher students response:",
-        result
-      );
-
       if (!result.success) {
         setErrorMsg(
-          result.message ||
-            "Failed to load students."
+          result.message || "Failed to load students."
         );
         return;
       }
@@ -96,10 +73,8 @@ function TeacherStudents() {
         "Load teacher students error:",
         error
       );
-
       setErrorMsg(
-        error.message ||
-          "Unable to load students."
+        error.message || "Unable to load students."
       );
     } finally {
       setLoading(false);
@@ -119,53 +94,30 @@ function TeacherStudents() {
   }, [students]);
 
   const filteredStudents = useMemo(() => {
-    const search =
-      searchTerm.trim().toLowerCase();
+    const search = searchTerm.trim().toLowerCase();
 
     return students.filter((student) => {
-      const name =
-        student.name || "";
-
-      const admissionNo =
-        student.admissionNo || "";
-
-      const className =
-        student.className || "";
-
-      const section =
-        student.section || "";
+      const name = student.name || "";
+      const admissionNo = student.admissionNo || "";
+      const className = student.className || "";
+      const section = student.section || "";
 
       const matchesSearch =
         !search ||
         name.toLowerCase().includes(search) ||
-        admissionNo
-          .toLowerCase()
-          .includes(search) ||
-        className
-          .toLowerCase()
-          .includes(search) ||
-        section
-          .toLowerCase()
-          .includes(search);
+        admissionNo.toLowerCase().includes(search) ||
+        className.toLowerCase().includes(search) ||
+        section.toLowerCase().includes(search);
 
       const matchesClass =
-        classFilter === "ALL" ||
-        className === classFilter;
+        classFilter === "ALL" || className === classFilter;
 
-      return (
-        matchesSearch &&
-        matchesClass
-      );
+      return matchesSearch && matchesClass;
     });
-  }, [
-    students,
-    searchTerm,
-    classFilter,
-  ]);
+  }, [students, searchTerm, classFilter]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -174,13 +126,10 @@ function TeacherStudents() {
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
-
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg(
-        "Photo must be less than 5 MB."
-      );
+      setErrorMsg("Photo must be less than 5 MB.");
       return;
     }
 
@@ -201,11 +150,9 @@ function TeacherStudents() {
     setPhotoFile(file);
 
     const reader = new FileReader();
-
     reader.onload = () => {
       setPhotoPreview(reader.result);
     };
-
     reader.readAsDataURL(file);
   };
 
@@ -214,7 +161,6 @@ function TeacherStudents() {
       ...emptyForm,
       admissionDate: today,
     });
-
     setPhotoFile(null);
     setPhotoPreview("");
   };
@@ -228,7 +174,6 @@ function TeacherStudents() {
 
   const closeModal = () => {
     if (saving) return;
-
     setShowModal(false);
     setErrorMsg("");
     resetForm();
@@ -236,141 +181,94 @@ function TeacherStudents() {
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
-
     setErrorMsg("");
     setSuccessMsg("");
 
-    if (!formData.name.trim()) {
-      setErrorMsg(
-        "Student name is required."
-      );
+    const fName = (formData.firstName || formData.name.split(" ")[0] || "").trim();
+    const lName = (formData.lastName || formData.name.split(" ").slice(1).join(" ") || "").trim();
+    const cnicVal = (formData.cnic || "").trim();
+    const classVal = (formData.className || "").trim();
+
+    if (!fName) {
+      setErrorMsg("First name is required.");
       return;
     }
 
-    if (!formData.admissionNo.trim()) {
-      setErrorMsg(
-        "Admission number is required."
-      );
+    if (!lName) {
+      setErrorMsg("Last name is required.");
       return;
     }
 
-    if (!formData.className.trim()) {
-      setErrorMsg(
-        "Class is required."
-      );
+    if (!cnicVal) {
+      setErrorMsg("CNIC / B-Form is required.");
       return;
     }
 
-    if (!formData.section.trim()) {
-      setErrorMsg(
-        "Section is required."
-      );
-      return;
-    }
-
-    if (!formData.parentName.trim()) {
-      setErrorMsg(
-        "Parent name is required."
-      );
-      return;
-    }
-
-    if (!formData.parentWhatsApp.trim()) {
-      setErrorMsg(
-        "Parent WhatsApp number is required."
-      );
+    if (!classVal) {
+      setErrorMsg("Course / Class is required.");
       return;
     }
 
     const payload = new FormData();
+    payload.append("firstName", fName);
+    payload.append("lastName", lName);
+    payload.append("cnic", cnicVal);
+    payload.append("courses", classVal);
 
-    payload.append(
-      "name",
-      formData.name.trim()
-    );
+    const computedName = `${fName} ${lName}`.trim();
+    payload.append("name", (formData.name.trim() || computedName));
+    payload.append("className", classVal);
 
-    payload.append(
-      "admissionNo",
-      formData.admissionNo.trim()
-    );
+    if (formData.admissionNo.trim()) {
+      payload.append("admissionNo", formData.admissionNo.trim());
+    }
 
-    payload.append(
-      "className",
-      formData.className.trim()
-    );
-
-    payload.append(
-      "section",
-      formData.section.trim()
-    );
+    if (formData.section.trim()) {
+      payload.append("section", formData.section.trim());
+    }
 
     if (formData.rollNo.trim()) {
-      payload.append(
-        "rollNo",
-        formData.rollNo.trim()
-      );
+      payload.append("rollNo", formData.rollNo.trim());
     }
 
-    payload.append(
-      "gender",
-      formData.gender
-    );
+    if (formData.gender) {
+      payload.append("gender", formData.gender);
+    }
 
-    payload.append(
-      "status",
-      formData.status
-    );
+    if (formData.status) {
+      payload.append("status", formData.status);
+    }
 
-    payload.append(
-      "parentName",
-      formData.parentName.trim()
-    );
+    if (formData.parentName.trim()) {
+      payload.append("parentName", formData.parentName.trim());
+    }
 
     if (formData.parentPhone.trim()) {
-      payload.append(
-        "parentPhone",
-        formData.parentPhone.trim()
-      );
+      payload.append("parentPhone", formData.parentPhone.trim());
     }
 
-    payload.append(
-      "parentWhatsApp",
-      formData.parentWhatsApp.trim()
-    );
+    if (formData.parentWhatsApp.trim()) {
+      payload.append("parentWhatsApp", formData.parentWhatsApp.trim());
+    }
 
     if (formData.parentEmail.trim()) {
-      payload.append(
-        "parentEmail",
-        formData.parentEmail.trim()
-      );
+      payload.append("parentEmail", formData.parentEmail.trim());
     }
 
     if (formData.dateOfBirth) {
-      payload.append(
-        "dateOfBirth",
-        formData.dateOfBirth
-      );
+      payload.append("dateOfBirth", formData.dateOfBirth);
     }
 
     if (formData.address.trim()) {
-      payload.append(
-        "address",
-        formData.address.trim()
-      );
+      payload.append("address", formData.address.trim());
     }
 
     if (formData.admissionDate) {
-      payload.append(
-        "admissionDate",
-        formData.admissionDate
-      );
+      payload.append("admissionDate", formData.admissionDate);
     }
 
     if (photoFile) {
-      payload.append(
-        "photo",
-        photoFile
-      );
+      payload.append("photo", photoFile);
     }
 
     setSaving(true);
@@ -382,50 +280,31 @@ function TeacherStudents() {
         payload
       );
 
-      console.log(
-        "Teacher student POST response:",
-        result
-      );
-
       if (!result.success) {
         setErrorMsg(
-          result.message ||
-            "Failed to add student."
+          result.message || "Failed to add student."
         );
         return;
       }
 
-      const newStudent =
-        result.data?.data?.student;
-
+      const newStudent = result.data?.data?.student;
       if (newStudent) {
-        setStudents((prev) => [
-          newStudent,
-          ...prev,
-        ]);
+        setStudents((prev) => [newStudent, ...prev]);
       } else {
         await loadStudents();
       }
 
       setShowModal(false);
       resetForm();
-
-      setSuccessMsg(
-        "Student added successfully."
-      );
+      setSuccessMsg("Student added successfully.");
 
       setTimeout(() => {
         setSuccessMsg("");
       }, 4000);
     } catch (error) {
-      console.error(
-        "Add teacher student error:",
-        error
-      );
-
+      console.error("Add teacher student error:", error);
       setErrorMsg(
-        error.message ||
-          "Unable to connect to backend."
+        error.message || "Unable to connect to backend."
       );
     } finally {
       setSaving(false);
@@ -434,7 +313,6 @@ function TeacherStudents() {
 
   return (
     <div>
-
       {/* Header */}
       <div
         className={`${neumorphicCard} mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4`}
@@ -443,11 +321,9 @@ function TeacherStudents() {
           <p className="text-[10px] uppercase tracking-wider font-bold text-blue-600">
             Teacher Panel
           </p>
-
           <h2 className="text-2xl font-black text-slate-800">
             Students
           </h2>
-
           <p className="text-xs text-slate-400 mt-1">
             View students and add new students.
           </p>
@@ -455,6 +331,7 @@ function TeacherStudents() {
 
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={loadStudents}
             className="bg-[#e0e5ec] text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs shadow-md hover:text-blue-600 active:scale-95 transition"
           >
@@ -462,6 +339,7 @@ function TeacherStudents() {
           </button>
 
           <button
+            type="button"
             onClick={openModal}
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-md active:scale-95 transition"
           >
@@ -489,44 +367,32 @@ function TeacherStudents() {
         <input
           type="text"
           value={searchTerm}
-          onChange={(e) =>
-            setSearchTerm(e.target.value)
-          }
+          onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search student name, admission no, class..."
           className={neumorphicInset}
         />
 
         <select
           value={classFilter}
-          onChange={(e) =>
-            setClassFilter(e.target.value)
-          }
+          onChange={(e) => setClassFilter(e.target.value)}
           className={`${neumorphicInset} md:max-w-xs`}
         >
-          <option value="ALL">
-            All Classes
-          </option>
-
+          <option value="ALL">All Classes</option>
           {classOptions.map((className) => (
-            <option
-              key={className}
-              value={className}
-            >
+            <option key={className} value={className}>
               {className}
             </option>
           ))}
         </select>
       </div>
 
-      {/* Students */}
+      {/* Students Table */}
       <div className={neumorphicCard}>
-
         <div className="flex justify-between items-center mb-5">
           <div>
             <h3 className="text-sm font-bold text-slate-800">
               Student Records
             </h3>
-
             <p className="text-[10px] text-slate-400 mt-1">
               {filteredStudents.length} student(s) found
             </p>
@@ -540,129 +406,91 @@ function TeacherStudents() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
-
               <thead>
                 <tr className="border-b border-slate-300 text-slate-500 uppercase">
-                  <th className="pb-3 pr-4">
-                    Student
-                  </th>
-
-                  <th className="pb-3 pr-4">
-                    Admission No
-                  </th>
-
-                  <th className="pb-3 pr-4">
-                    Class
-                  </th>
-
-                  <th className="pb-3 pr-4">
-                    Section
-                  </th>
-
-                  <th className="pb-3 pr-4">
-                    Roll No
-                  </th>
-
-                  <th className="pb-3 pr-4">
-                    Parent
-                  </th>
-
-                  <th className="pb-3">
-                    Status
-                  </th>
+                  <th className="pb-3 pr-4">Student</th>
+                  <th className="pb-3 pr-4">Admission No</th>
+                  <th className="pb-3 pr-4">Class</th>
+                  <th className="pb-3 pr-4">Section</th>
+                  <th className="pb-3 pr-4">Roll No</th>
+                  <th className="pb-3 pr-4">Parent</th>
+                  <th className="pb-3">Status</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-slate-200">
-
                 {filteredStudents.length > 0 ? (
-                  filteredStudents.map(
-                    (student) => (
-                      <tr
-                        key={student._id}
-                        className="hover:bg-white/40 transition"
-                      >
-
-                        <td className="py-3 pr-4">
-                          <div className="flex items-center gap-3">
-
-                            <div className="w-9 h-9 rounded-xl overflow-hidden bg-[#e0e5ec] shadow-[inset_2px_2px_4px_rgb(163,177,198,0.5)] flex items-center justify-center">
-
-                              {student.photo ? (
-                                <img
-                                  src={
-                                    student.photo.startsWith(
-                                      "http"
-                                    )
-                                      ? student.photo
-                                      : `https://apinstitute.localpro1.net${student.photo}`
-                                  }
-                                  alt={student.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <span>
-                                  👤
-                                </span>
-                              )}
-
-                            </div>
-
-                            <div>
-                              <p className="font-bold text-slate-800">
-                                {student.name}
-                              </p>
-
-                              <p className="text-[9px] text-slate-400">
-                                {student.gender || "-"}
-                              </p>
-                            </div>
-
+                  filteredStudents.map((student) => (
+                    <tr
+                      key={student._id}
+                      className="hover:bg-white/40 transition"
+                    >
+                      <td className="py-3 pr-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl overflow-hidden bg-[#e0e5ec] shadow-[inset_2px_2px_4px_rgb(163,177,198,0.5)] flex items-center justify-center">
+                            {student.photo ? (
+                              <img
+                                src={
+                                  student.photo.startsWith("http")
+                                    ? student.photo
+                                    : `https://apinstitute.localpro1.net${student.photo}`
+                                }
+                                alt={student.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span>👤</span>
+                            )}
                           </div>
-                        </td>
+                          <div>
+                            <p className="font-bold text-slate-800">
+                              {student.name}
+                            </p>
+                            <p className="text-[9px] text-slate-400">
+                              {student.gender || "-"}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
 
-                        <td className="py-3 pr-4 font-bold text-slate-700">
-                          {student.admissionNo || "-"}
-                        </td>
+                      <td className="py-3 pr-4 font-bold text-slate-700">
+                        {student.admissionNo || "-"}
+                      </td>
 
-                        <td className="py-3 pr-4">
-                          {student.className || "-"}
-                        </td>
+                      <td className="py-3 pr-4">
+                        {student.className || "-"}
+                      </td>
 
-                        <td className="py-3 pr-4">
-                          {student.section || "-"}
-                        </td>
+                      <td className="py-3 pr-4">
+                        {student.section || "-"}
+                      </td>
 
-                        <td className="py-3 pr-4">
-                          {student.rollNo || "-"}
-                        </td>
+                      <td className="py-3 pr-4">
+                        {student.rollNo || "-"}
+                      </td>
 
-                        <td className="py-3 pr-4">
-                          <p className="font-bold">
-                            {student.parentName || "-"}
-                          </p>
+                      <td className="py-3 pr-4">
+                        <p className="font-bold">
+                          {student.parentName || "-"}
+                        </p>
+                        <p className="text-[9px] text-slate-400">
+                          {student.parentWhatsApp || "-"}
+                        </p>
+                      </td>
 
-                          <p className="text-[9px] text-slate-400">
-                            {student.parentWhatsApp || "-"}
-                          </p>
-                        </td>
-
-                        <td className="py-3">
-                          <span
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
-                              student.status ===
-                              "ACTIVE"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-rose-100 text-rose-700"
-                            }`}
-                          >
-                            {student.status || "-"}
-                          </span>
-                        </td>
-
-                      </tr>
-                    )
-                  )
+                      <td className="py-3">
+                        <span
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                            student.status === "ACTIVE"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-rose-100 text-rose-700"
+                          }`}
+                        >
+                          {student.status || "-"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
                     <td
@@ -673,7 +501,6 @@ function TeacherStudents() {
                     </td>
                   </tr>
                 )}
-
               </tbody>
             </table>
           </div>
@@ -683,19 +510,15 @@ function TeacherStudents() {
       {/* ================= ADD STUDENT MODAL ================= */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-
           <div
             className={`${neumorphicCard} w-full max-w-4xl bg-[#e0e5ec] max-h-[92vh] overflow-y-auto`}
           >
-
             {/* Modal Header */}
             <div className="flex justify-between items-center mb-5 border-b border-slate-300 pb-3">
-
               <div>
                 <h3 className="text-sm font-bold text-slate-800">
                   Add New Student
                 </h3>
-
                 <p className="text-[10px] text-slate-500 mt-1">
                   Student will be saved to the backend database.
                 </p>
@@ -721,17 +544,14 @@ function TeacherStudents() {
               onSubmit={handleAddStudent}
               className="space-y-5"
             >
-
               {/* Photo */}
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                  Student Photo
+                  Student Photo (Optional)
                 </label>
 
                 <div className="flex items-center gap-4">
-
                   <div className="w-20 h-20 rounded-2xl bg-[#e0e5ec] shadow-[inset_3px_3px_6px_rgb(163,177,198,0.6),inset_-3px_-3px_6px_rgba(255,255,255,0.8)] flex items-center justify-center overflow-hidden">
-
                     {photoPreview ? (
                       <img
                         src={photoPreview}
@@ -739,17 +559,13 @@ function TeacherStudents() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-2xl">
-                        👤
-                      </span>
+                      <span className="text-2xl">👤</span>
                     )}
-
                   </div>
 
                   <div>
                     <label className="cursor-pointer inline-block px-4 py-2.5 bg-[#e0e5ec] shadow-[3px_3px_6px_rgb(163,177,198,0.6),-3px_-3px_6px_rgba(255,255,255,0.8)] hover:text-blue-600 text-slate-700 font-bold text-xs rounded-xl transition">
                       📤 Upload Image
-
                       <input
                         type="file"
                         accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
@@ -762,32 +578,84 @@ function TeacherStudents() {
                       JPG, JPEG, PNG or WEBP • Maximum 5 MB
                     </p>
                   </div>
-
                 </div>
               </div>
 
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                    Student Name *
+                    First Name *
                   </label>
-
                   <input
-                    name="name"
-                    value={formData.name}
+                    name="firstName"
+                    value={formData.firstName}
                     onChange={handleInputChange}
                     className={neumorphicInset}
-                    placeholder="Student full name"
+                    placeholder="First name"
+                    required
                   />
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                    Admission No *
+                    Last Name *
                   </label>
+                  <input
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    className={neumorphicInset}
+                    placeholder="Last name"
+                    required
+                  />
+                </div>
 
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+                    CNIC / B-Form *
+                  </label>
+                  <input
+                    name="cnic"
+                    value={formData.cnic}
+                    onChange={handleInputChange}
+                    className={neumorphicInset}
+                    placeholder="37405-XXXXXXX-X"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+                    Enrolled Course / Class *
+                  </label>
+                  <input
+                    name="className"
+                    value={formData.className}
+                    onChange={handleInputChange}
+                    className={neumorphicInset}
+                    placeholder="Class 5 / Web Development"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+                    Full Name (Optional)
+                  </label>
+                  <input
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className={neumorphicInset}
+                    placeholder="Auto-generated if left empty"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+                    Admission No (Optional)
+                  </label>
                   <input
                     name="admissionNo"
                     value={formData.admissionNo}
@@ -799,23 +667,8 @@ function TeacherStudents() {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                    Class *
+                    Section (Optional)
                   </label>
-
-                  <input
-                    name="className"
-                    value={formData.className}
-                    onChange={handleInputChange}
-                    className={neumorphicInset}
-                    placeholder="Class 5"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                    Section *
-                  </label>
-
                   <input
                     name="section"
                     value={formData.section}
@@ -827,9 +680,8 @@ function TeacherStudents() {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                    Roll No
+                    Roll No (Optional)
                   </label>
-
                   <input
                     name="rollNo"
                     value={formData.rollNo}
@@ -843,24 +695,15 @@ function TeacherStudents() {
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
                     Gender
                   </label>
-
                   <select
                     name="gender"
                     value={formData.gender}
                     onChange={handleInputChange}
                     className={neumorphicInset}
                   >
-                    <option value="MALE">
-                      Male
-                    </option>
-
-                    <option value="FEMALE">
-                      Female
-                    </option>
-
-                    <option value="OTHER">
-                      Other
-                    </option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
                   </select>
                 </div>
 
@@ -868,7 +711,6 @@ function TeacherStudents() {
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
                     Date of Birth
                   </label>
-
                   <input
                     type="date"
                     name="dateOfBirth"
@@ -882,7 +724,6 @@ function TeacherStudents() {
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
                     Admission Date
                   </label>
-
                   <input
                     type="date"
                     name="admissionDate"
@@ -891,23 +732,19 @@ function TeacherStudents() {
                     className={neumorphicInset}
                   />
                 </div>
-
               </div>
 
               {/* Parent */}
               <div className="border-t border-slate-300 pt-5">
-
                 <h4 className="text-xs font-black text-slate-800 mb-4">
-                  Parent Information
+                  Parent Information (Optional)
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                      Parent Name *
+                      Parent / Guardian Name
                     </label>
-
                     <input
                       name="parentName"
                       value={formData.parentName}
@@ -919,9 +756,8 @@ function TeacherStudents() {
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                      Parent WhatsApp *
+                      Parent WhatsApp
                     </label>
-
                     <input
                       name="parentWhatsApp"
                       value={formData.parentWhatsApp}
@@ -935,7 +771,6 @@ function TeacherStudents() {
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
                       Parent Phone
                     </label>
-
                     <input
                       name="parentPhone"
                       value={formData.parentPhone}
@@ -949,7 +784,6 @@ function TeacherStudents() {
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
                       Parent Email
                     </label>
-
                     <input
                       type="email"
                       name="parentEmail"
@@ -959,16 +793,14 @@ function TeacherStudents() {
                       placeholder="parent@example.com"
                     />
                   </div>
-
                 </div>
               </div>
 
               {/* Address */}
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
-                  Address
+                  Address (Optional)
                 </label>
-
                 <textarea
                   name="address"
                   value={formData.address}
@@ -981,7 +813,6 @@ function TeacherStudents() {
 
               {/* Buttons */}
               <div className="flex justify-end gap-3 border-t border-slate-300 pt-5">
-
                 <button
                   type="button"
                   onClick={closeModal}
@@ -996,18 +827,13 @@ function TeacherStudents() {
                   disabled={saving}
                   className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md active:scale-95 disabled:opacity-50"
                 >
-                  {saving
-                    ? "Saving..."
-                    : "Save Student"}
+                  {saving ? "Saving..." : "Save Student"}
                 </button>
-
               </div>
-
             </form>
           </div>
         </div>
       )}
-
     </div>
   );
 }

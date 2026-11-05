@@ -1,17 +1,3 @@
-/**
- * Automated Verification Script for Production Login Endpoint
- *
- * Tests the live authentication endpoint:
- *   POST https://apinstitute.localpro1.net/api/auth/login
- *   GET  https://apinstitute.localpro1.net/api/auth/me
- *
- * Uses Node.js native 'https' module so it requires zero npm dependencies.
- *
- * Usage:
- *   node scripts/verifyLiveLogin.js
- *   node scripts/verifyLiveLogin.js --email=admin@localpro.com --password=adminpassword123
- */
-
 const https = require('https');
 const url = require('url');
 

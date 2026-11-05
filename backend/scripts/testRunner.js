@@ -283,6 +283,7 @@ const runSuite = async () => {
       },
       {
         name: 'Ali Raza',
+        cnic: '37405-1234567-1',
         admissionNo: 'TEST-ADM-001',
         className: 'TestGrade7',
         section: 'A',
@@ -318,6 +319,7 @@ const runSuite = async () => {
       },
       {
         name: 'Duplicate Student',
+        cnic: '37405-7654321-2',
         admissionNo: 'TEST-ADM-001',
         className: 'TestGrade7',
         section: 'A',

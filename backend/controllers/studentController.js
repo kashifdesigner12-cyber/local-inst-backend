@@ -23,56 +23,116 @@ const escapeRegex = (value) => {
  *
  * POST /api/students
  * Access: Admin, Teacher
+ *
+ * Required fields:
+ * - First Name (or derived from Name)
+ * - Last Name (or derived from Name)
+ * - CNIC / B-Form
+ * - Courses Details / Enrolled Courses (at least one course selected)
+ *
+ * All other fields are optional.
  */
 const createStudent = async (req, res, next) => {
   try {
     const {
       name,
+      firstName,
+      lastName,
       admissionNo,
       className,
+      courses,
+      enrolledCourses,
       courseDuration,
       section,
       rollNo,
+      rollNumber,
       gender,
       status,
       cnic,
+      bForm,
       parentName,
+      fatherName,
       parentPhone,
+      parentWhatsApp,
       studentPhone,
       parentEmail,
       dateOfBirth,
+      dob,
       address,
       admissionDate
     } = req.body || {};
 
-    if (
-      !name ||
-      !admissionNo ||
-      !className ||
-      !section ||
-      !parentName
-    ) {
+    // -------------------------------------------------------------
+    // Required Fields Only: First Name, Last Name, CNIC, Courses
+    // -------------------------------------------------------------
+
+    // 1. First Name
+    const resolvedFirstName = String(
+      firstName || (name ? String(name).trim().split(/\s+/)[0] : '')
+    ).trim();
+
+    if (!resolvedFirstName) {
+      return ApiResponse.error(res, 400, 'First name is required');
+    }
+
+    // 2. Last Name
+    const resolvedLastName = String(
+      lastName || (name ? String(name).trim().split(/\s+/).slice(1).join(' ') : '')
+    ).trim();
+
+    if (!resolvedLastName) {
+      return ApiResponse.error(res, 400, 'Last name is required');
+    }
+
+    // 3. CNIC / B-Form
+    const resolvedCnic = String(cnic || bForm || '').trim();
+    if (!resolvedCnic) {
+      return ApiResponse.error(res, 400, 'CNIC / B-Form is required');
+    }
+
+    // 4. Courses Details / Enrolled Courses (Select at least one course)
+    let courseList = courses || enrolledCourses;
+    if (typeof courseList === 'string') {
+      courseList = courseList
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+    } else if (!Array.isArray(courseList) && className) {
+      courseList = String(className)
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+    }
+
+    if (!courseList || !Array.isArray(courseList) || courseList.length === 0) {
       return ApiResponse.error(
         res,
         400,
-        'Please provide all required fields: name, admissionNo, className, section, parentName'
+        'Please select at least one course (Courses Details / Enrolled Courses is required)'
       );
     }
 
-    const normalizedAdmissionNo = String(admissionNo)
-      .trim()
-      .toUpperCase();
+    // -------------------------------------------------------------
+    // All other fields are OPTIONAL / NON-MANDATORY
+    // -------------------------------------------------------------
+    let normalizedAdmissionNo = admissionNo
+      ? String(admissionNo).trim().toUpperCase()
+      : '';
 
-    const existingStudent = await Student.findOne({
-      admissionNo: normalizedAdmissionNo
-    });
+    if (normalizedAdmissionNo) {
+      const existingStudent = await Student.findOne({
+        admissionNo: normalizedAdmissionNo
+      });
 
-    if (existingStudent) {
-      return ApiResponse.error(
-        res,
-        409,
-        `Student with admission number '${normalizedAdmissionNo}' already exists`
-      );
+      if (existingStudent) {
+        return ApiResponse.error(
+          res,
+          409,
+          `Student with admission number '${normalizedAdmissionNo}' already exists`
+        );
+      }
+    } else {
+      normalizedAdmissionNo = `ADM-${Date.now().toString().slice(-6)}`;
     }
 
     // Photo extraction (Supports both req.files.photo and req.file)
@@ -93,67 +153,34 @@ const createStudent = async (req, res, next) => {
       idCardPath = String(req.body.idCardPhoto).trim();
     }
 
+    const resolvedParentName = String(parentName || fatherName || '').trim();
+    const resolvedParentPhone = String(parentPhone || parentWhatsApp || '').trim();
+    const resolvedClassName = className
+      ? String(className).trim()
+      : courseList.join(', ');
+
     const student = await Student.create({
-      name: String(name).trim(),
-
+      firstName: resolvedFirstName,
+      lastName: resolvedLastName,
+      name: `${resolvedFirstName} ${resolvedLastName}`.trim(),
       admissionNo: normalizedAdmissionNo,
-
-      className: String(className).trim(),
-
-      courseDuration: courseDuration
-        ? String(courseDuration).trim()
-        : '3 Months',
-
-      section: String(section)
-        .trim()
-        .toUpperCase(),
-
-      rollNo: rollNo
-        ? String(rollNo).trim()
-        : '',
-
-      gender: gender
-        ? String(gender).trim().toUpperCase()
-        : 'MALE',
-
-      status: status
-        ? String(status).trim().toUpperCase()
-        : 'ACTIVE',
-
-      cnic: cnic
-        ? String(cnic).trim()
-        : '',
-
+      className: resolvedClassName,
+      courses: courseList,
+      courseDuration: courseDuration ? String(courseDuration).trim() : '3 Months',
+      section: section ? String(section).trim().toUpperCase() : 'MORNING',
+      rollNo: rollNo || rollNumber ? String(rollNo || rollNumber).trim() : '',
+      gender: gender ? String(gender).trim() : 'Male',
+      status: status ? String(status).trim() : 'Active',
+      cnic: resolvedCnic,
       photo: photoPath,
-
       idCardPhoto: idCardPath,
-
-      parentName: String(parentName).trim(),
-
-      parentPhone: parentPhone
-        ? String(parentPhone).trim()
-        : '',
-
-      studentPhone: studentPhone
-        ? String(studentPhone).trim()
-        : '',
-
-      parentEmail: parentEmail
-        ? String(parentEmail).trim().toLowerCase()
-        : '',
-
-      dateOfBirth: dateOfBirth
-        ? new Date(dateOfBirth)
-        : undefined,
-
-      address: address
-        ? String(address).trim()
-        : '',
-
-      admissionDate: admissionDate
-        ? new Date(admissionDate)
-        : Date.now(),
-
+      parentName: resolvedParentName,
+      parentPhone: resolvedParentPhone,
+      studentPhone: studentPhone ? String(studentPhone).trim() : '',
+      parentEmail: parentEmail ? String(parentEmail).trim().toLowerCase() : '',
+      dateOfBirth: dateOfBirth || dob ? new Date(dateOfBirth || dob) : undefined,
+      address: address ? String(address).trim() : '',
+      admissionDate: admissionDate ? new Date(admissionDate) : Date.now(),
       createdBy: req.user._id
     });
 
@@ -254,6 +281,8 @@ const getStudents = async (req, res, next) => {
 
       query.$or = [
         { name: searchRegex },
+        { firstName: searchRegex },
+        { lastName: searchRegex },
         { admissionNo: searchRegex },
         { parentName: searchRegex },
         { parentPhone: searchRegex },
@@ -431,8 +460,11 @@ const updateStudent = async (req, res, next) => {
 
     const allowedFields = [
       'name',
+      'firstName',
+      'lastName',
       'admissionNo',
       'className',
+      'courses',
       'courseDuration',
       'section',
       'rollNo',
@@ -470,6 +502,18 @@ const updateStudent = async (req, res, next) => {
 
     if (updates.name !== undefined) {
       updates.name = String(updates.name).trim();
+    }
+
+    if (updates.firstName !== undefined || updates.lastName !== undefined) {
+      const f = updates.firstName !== undefined ? updates.firstName : student.firstName;
+      const l = updates.lastName !== undefined ? updates.lastName : student.lastName;
+      updates.name = `${f || ''} ${l || ''}`.trim();
+    }
+
+    if (updates.courses !== undefined && !updates.className) {
+      if (Array.isArray(updates.courses)) {
+        updates.className = updates.courses.join(', ');
+      }
     }
 
     if (updates.admissionNo !== undefined) {
